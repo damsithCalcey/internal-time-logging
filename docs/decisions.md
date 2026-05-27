@@ -4,6 +4,40 @@ Tracks every architectural and design decision made during development. Updated 
 
 ---
 
+## Stage 1 — Database Schema, Auth Seam, Repositories
+
+### D1-01 · Auth hook injects `full_name` into JWT
+
+**Decision:** The `custom_access_token_hook` also injects `app_metadata.full_name` alongside `role` and `is_active`.
+
+**Why:** The frontend `AuthProvider` needs the user's display name from `/me` without a DB round-trip. Adding `full_name` to the hook at Stage 1 avoids a schema migration later and keeps `/me` claim-only per the dev plan.
+
+---
+
+### D1-02 · JWKS lazily initialized in auth middleware
+
+**Decision:** `createRemoteJWKSet` is called lazily (on first request) rather than at module load time.
+
+**Why:** Module-load initialization would throw if `SUPABASE_URL` is missing at server start-time, breaking `pnpm --filter api dev` before env vars are configured. Lazy init lets the server start, with auth errors deferred to actual requests.
+
+---
+
+### D1-03 · Migration files committed as plain SQL (not Drizzle-journal format)
+
+**Decision:** `migrations/0000_initial_schema.sql` and `migrations/0001_auth_hook_and_rls.sql` are hand-written SQL files. They are applied via the `psql` CLI (`psql $DATABASE_URL -f ...`) or the Supabase SQL editor. `db:push` is used for local dev (no migration tracking). Running `pnpm db:generate` after connecting to a live DB will produce the Drizzle-journal format in the same directory for production `db:migrate` use.
+
+**Why:** `drizzle-kit generate` needs a live DB connection only when the old snapshot differs. For Stage 1 (no prior schema), the SQL content is well-known. Committing the SQL directly means the repo is self-documenting even before Supabase is provisioned. The Drizzle snapshot files can be generated once connected.
+
+---
+
+### D1-04 · `drizzle.config.ts` allows empty DATABASE_URL for `db:generate`
+
+**Decision:** The config no longer throws on missing `DATABASE_URL`. An empty string is passed to `dbCredentials.url`; `db:generate` succeeds without a connection. `db:push` and `db:migrate` fail at connection time with a clear postgres error.
+
+**Why:** The original `throw` prevented `pnpm db:generate` from running without env vars, which blocked schema iteration in environments without a provisioned DB.
+
+---
+
 ## Stage 0 — Discovery & Monorepo Scaffold
 
 ### D0-01 · B1: ERD drift — `amended_at`, `amended_by`, `original_hours` columns

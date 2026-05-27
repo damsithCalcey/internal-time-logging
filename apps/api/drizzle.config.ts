@@ -1,14 +1,13 @@
 import { defineConfig } from 'drizzle-kit'
 
-const databaseUrl = process.env['DATABASE_URL']
-if (!databaseUrl) throw new Error('DATABASE_URL is required')
-
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/db/schema.ts',
   out: './migrations',
   dbCredentials: {
-    url: databaseUrl,
+    // Empty string is safe for `db:generate` which doesn't connect.
+    // `db:push` and `db:migrate` will fail at connection time if unset.
+    url: process.env['DATABASE_URL'] ?? '',
   },
   verbose: true,
   strict: true,

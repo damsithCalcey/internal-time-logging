@@ -6,7 +6,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 0 — Discovery & Monorepo Scaffold 🔄
+## Stage 0 — Discovery & Monorepo Scaffold ✅
 
 ### Decisions / B-items
 
@@ -41,9 +41,51 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 1 — Database Schema, Auth Seam, Repositories ⬜
+## Stage 1 — Database Schema, Auth Seam, Repositories ✅
 
-*(begin after Stage 0 gate fully passes)*
+### Deliverables
+
+- ✅ Drizzle schema (`apps/api/src/db/schema.ts`) — all 6 tables, CHECK constraints, composite FKs, partial unique indexes, performance indexes
+- ✅ DB client (`apps/api/src/db/client.ts`) and `withTx` transaction helper
+- ✅ Repositories: `users`, `projects`, `tasks`, `user-projects`, `time-entries`, `timer-sessions`
+- ✅ Shared middleware: `logger.ts`, `errors.ts`, `auth.ts` (JWT + `requireAuth` + `requireRole`), `supabase-admin.ts`
+- ✅ Auth feature: `GET /me` (claim-only, no DB lookup)
+- ✅ SQL migrations: `0000_initial_schema.sql`, `0001_auth_hook_and_rls.sql`
+- ✅ Seed script (`scripts/seed.ts`) with `pnpm db:seed`
+- ✅ Repository integration tests (skipped without `DATABASE_URL`)
+- ✅ `MeResponse` Zod schema in `@repo/shared-types`
+
+### Gate (requires live Supabase project)
+
+- ✅ Migrations apply cleanly to a fresh empty Supabase project
+  - `psql $DATABASE_URL -f migrations/0000_initial_schema.sql`
+  - `psql $DATABASE_URL -f migrations/0001_auth_hook_and_rls.sql`
+- ✅ DB-level negative tests pass (raw SQL):
+  - ✅ `INSERT … hours = 0.3` fails (chk_hours_valid)
+  - ✅ `INSERT … hours = 25` fails (chk_hours_valid)
+  - ✅ `INSERT … entry_date = tomorrow` fails (chk_no_future_date)
+  - ✅ `INSERT time_entries` with task from a different project fails (composite FK)
+  - ✅ `INSERT timer_sessions` for user with existing `stopped_at IS NULL` row fails (partial unique)
+  - ✅ Duplicate `(project_id, lower(name))` task insert fails
+  - ✅ Duplicate `lower(name)` project insert fails
+  - ✅ Deleting a project with referencing tasks/entries fails (RESTRICT)
+- ✅ Grants negative test: `SELECT * FROM time_entries` as `authenticated` role is denied
+- ✅ Auth hook migration includes all three `supabase_auth_admin` grants (verify via `information_schema`)
+- ✅ Auth hook registered in Supabase Dashboard → Authentication → Hooks
+- ✅ Fresh login returns JWT with `app_metadata.role` and `app_metadata.is_active` matching seed user
+- ✅ Role change + token refresh reflects new role in JWT
+- ✅ `GET /me` returns 200 with seeded manager's claims using valid JWT
+- ✅ `GET /me` returns 401 with no token / expired token / bad signature
+- ✅ `GET /me` returns 403 when `app_metadata.is_active` is false
+- ✅ Repository integration tests pass against test DB (`pnpm --filter api test`)
+
+### Notes
+
+- Provision Supabase dev project; fill `apps/api/.env.local` from `.env.example`
+- Apply migrations in order (0000 → 0001) before running seed
+- Run `pnpm --filter api db:seed` to create test accounts (damsith+manager/emp1/emp2@calcey.com)
+- Register auth hook in Supabase Dashboard after migration 0001 is applied
+- Access token TTL: set to 15 minutes in Supabase Auth settings (D0-08)
 
 ---
 
