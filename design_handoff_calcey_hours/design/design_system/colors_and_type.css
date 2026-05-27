@@ -1,0 +1,265 @@
+/* ============================================================
+   Calcey Design System — Foundations
+   Typography: Red Hat Display (Google Fonts)
+   Iconography: Feather Icons (CDN)
+   ============================================================ */
+
+/* Red Hat Display — local variable font files (display + body) */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("fonts/RedHatDisplay-VariableFont_wght.ttf") format("truetype-variations"),
+       url("fonts/RedHatDisplay-VariableFont_wght.ttf") format("truetype");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("fonts/RedHatDisplay-Italic-VariableFont_wght.ttf") format("truetype-variations"),
+       url("fonts/RedHatDisplay-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Red Hat Mono — Google Fonts (no local file provided yet) */
+@import url("https://fonts.googleapis.com/css2?family=Red+Hat+Mono:ital,wght@0,300..700;1,300..700&display=swap");
+
+:root {
+  /* -------- Brand colors (official palette) ------------------ */
+  --tropical-magenta: #AD1AAC; /* Pantone 253C */
+  --sky-blue:         #59CBE8; /* Pantone 305C */
+  --paradise-pink:    #DF4661; /* Pantone 198C */
+  --kingfisher-blue:  #307FE2; /* Pantone 2727C */
+  --koha-red:         #E4002B; /* Pantone 185C */
+
+  /* -------- Tints (10/20/40/60/80%) for surfaces & states ---- */
+  --magenta-100: #F7E8F7;
+  --magenta-200: #EBC5EB;
+  --magenta-400: #CE6BCD;
+  --magenta-600: #B833B7;
+  --magenta-800: #8E158D;
+
+  --kingfisher-100: #E6F0FC;
+  --kingfisher-200: #C2D9F7;
+  --kingfisher-400: #74A8EC;
+  --kingfisher-600: #2068C5;
+  --kingfisher-800: #1A4F96;
+
+  --sky-100: #EAF8FC;
+  --sky-200: #C9EDF6;
+  --sky-400: #8BDAEE;
+  --sky-600: #2FB0D2;
+  --sky-800: #1F7E97;
+
+  --pink-100: #FCEBEE;
+  --pink-600: #C6354F;
+
+  --red-100: #FCE0E5;
+  --red-600: #B80022;
+
+  /* -------- Neutrals (warm-leaning grayscale) ---------------- */
+  --ink-1000: #0B0B12; /* near-black, body text on light */
+  --ink-900:  #15151D;
+  --ink-800:  #2A2A36;
+  --ink-700:  #3F3F50;
+  --ink-600:  #5A5A6E;
+  --ink-500:  #7B7B8E;
+  --ink-400:  #A6A6B5;
+  --ink-300:  #C9C9D3;
+  --ink-200:  #E4E4EA;
+  --ink-100:  #F1F1F4;
+  --ink-50:   #F8F8FA;
+  --white:    #FFFFFF;
+
+  /* -------- Semantic tokens — backgrounds -------------------- */
+  --bg-base:        var(--white);
+  --bg-subtle:      var(--ink-50);
+  --bg-muted:       var(--ink-100);
+  --bg-inverse:     var(--ink-1000);
+  --bg-brand:       var(--tropical-magenta);
+  --bg-brand-soft:  var(--magenta-100);
+
+  /* -------- Semantic tokens — foreground --------------------- */
+  --fg-1:           var(--ink-1000);  /* primary text */
+  --fg-2:           var(--ink-700);   /* secondary text */
+  --fg-3:           var(--ink-500);   /* tertiary / placeholder */
+  --fg-disabled:    var(--ink-400);
+  --fg-on-brand:    var(--white);
+  --fg-on-inverse:  var(--white);
+  --fg-link:        var(--tropical-magenta);
+  --fg-link-hover:  var(--magenta-800);
+
+  /* -------- Semantic tokens — borders ------------------------ */
+  --border-subtle:  var(--ink-200);
+  --border-default: var(--ink-300);
+  --border-strong:  var(--ink-700);
+  --border-brand:   var(--tropical-magenta);
+  --border-focus:   var(--kingfisher-blue);
+
+  /* -------- Status colors ------------------------------------ */
+  --status-success: #2C9F69;
+  --status-warning: #E8A33A;
+  --status-danger:  var(--koha-red);
+  --status-info:    var(--kingfisher-blue);
+
+  /* -------- Typography — families ---------------------------- */
+  --font-display: "Red Hat Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body:    "Red Hat Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    "Red Hat Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* -------- Typography — weights ----------------------------- */
+  --fw-light:     300;
+  --fw-regular:   400;
+  --fw-medium:    500;
+  --fw-semibold:  600;
+  --fw-bold:      700;
+  --fw-black:     900;
+
+  /* -------- Typography — scale (display + body) -------------- */
+  --fs-display-1: clamp(56px, 7.2vw, 112px); /* hero */
+  --fs-display-2: clamp(44px, 5.4vw, 80px);
+  --fs-h1:        clamp(36px, 4vw, 56px);
+  --fs-h2:        clamp(28px, 3vw, 40px);
+  --fs-h3:        24px;
+  --fs-h4:        20px;
+  --fs-body-lg:   18px;
+  --fs-body:      16px;
+  --fs-body-sm:   14px;
+  --fs-caption:   12px;
+  --fs-overline:  11px;
+
+  /* -------- Line heights ------------------------------------- */
+  --lh-tight:     1.04;
+  --lh-snug:      1.18;
+  --lh-normal:    1.45;
+  --lh-relaxed:   1.6;
+
+  /* -------- Letter spacing ----------------------------------- */
+  --tracking-tight:   -0.02em;
+  --tracking-snug:    -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-overline: 0.16em;
+
+  /* -------- Spacing scale (4 px base) ------------------------ */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* -------- Corner radii ------------------------------------- */
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-pill: 999px;
+
+  /* -------- Elevation (shadows) ------------------------------ */
+  --shadow-sm:   0 1px 2px rgba(11, 11, 18, 0.06), 0 1px 1px rgba(11, 11, 18, 0.04);
+  --shadow-md:   0 4px 14px rgba(11, 11, 18, 0.08), 0 2px 4px rgba(11, 11, 18, 0.04);
+  --shadow-lg:   0 14px 40px rgba(11, 11, 18, 0.12), 0 4px 8px rgba(11, 11, 18, 0.05);
+  --shadow-xl:   0 28px 80px rgba(11, 11, 18, 0.18), 0 8px 16px rgba(11, 11, 18, 0.06);
+  --shadow-focus: 0 0 0 3px rgba(48, 127, 226, 0.35); /* kingfisher focus ring */
+  --shadow-brand: 0 18px 50px rgba(173, 26, 172, 0.28);
+
+  /* -------- Motion ------------------------------------------- */
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-emphasis: cubic-bezier(0.16, 0.84, 0.24, 1.06);
+  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);
+  --dur-instant:   80ms;
+  --dur-quick:     160ms;
+  --dur-base:      240ms;
+  --dur-slow:      400ms;
+
+  /* -------- Layout ------------------------------------------- */
+  --container-max: 1280px;
+  --container-pad: clamp(20px, 4vw, 64px);
+  --grid-gap:      24px;
+}
+
+/* ============================================================
+   Semantic helpers — apply directly to elements
+   ============================================================ */
+
+html, body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg-1);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.cy-display-1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-display-1);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.cy-display-2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-display-2);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.cy-h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-snug);
+}
+.cy-h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-snug);
+}
+.cy-h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+}
+.cy-h4 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+}
+.cy-body-lg { font-size: var(--fs-body-lg); line-height: var(--lh-relaxed); }
+.cy-body    { font-size: var(--fs-body);    line-height: var(--lh-normal); }
+.cy-body-sm { font-size: var(--fs-body-sm); line-height: var(--lh-normal); color: var(--fg-2); }
+.cy-caption { font-size: var(--fs-caption); line-height: var(--lh-normal); color: var(--fg-3); }
+.cy-overline {
+  font-size: var(--fs-overline);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.cy-mono { font-family: var(--font-mono); font-size: 14px; }
+.cy-link {
+  color: var(--fg-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color var(--dur-quick) var(--ease-standard);
+}
+.cy-link:hover { color: var(--fg-link-hover); }

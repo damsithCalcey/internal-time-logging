@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calcey · Hours — Internal Time Logging App</title>
+<link rel="stylesheet" href="design_system/colors_and_type.css" />
+<script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: var(--font-body); color: var(--ink-1000); }
+
+  /* ---------- App-shell shared styles (used inside every artboard) ---------- */
+  .app, .app * { box-sizing: border-box; }
+  .app {
+    width: 100%; height: 100%;
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    background: var(--ink-50);
+    color: var(--ink-1000);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--ink-1000);
+    color: #fff;
+    padding: 24px 18px;
+    display: flex; flex-direction: column;
+    gap: 24px;
+  }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px; }
+  .sidebar-brand-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--tropical-magenta);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 900; color: #fff;
+    font-size: 18px; letter-spacing: -0.04em;
+  }
+  .sidebar-brand-name {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: 18px; letter-spacing: -0.02em;
+  }
+  .sidebar-brand-name .dot { color: var(--tropical-magenta); }
+  .sidebar-section-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    padding: 0 8px; margin-bottom: 8px;
+  }
+  .nav-list { display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px;
+    color: rgba(255,255,255,0.75);
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 14px; cursor: pointer;
+    transition: all 160ms var(--ease-standard);
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .nav-item.active {
+    background: rgba(173,26,172,0.18);
+    color: #fff;
+    box-shadow: inset 2px 0 0 var(--tropical-magenta);
+  }
+  .nav-item .badge {
+    margin-left: auto;
+    background: var(--tropical-magenta);
+    color: #fff; font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 600;
+    padding: 2px 7px; border-radius: 999px; letter-spacing: 0;
+  }
+  .nav-item svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-user {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--paradise-pink), var(--tropical-magenta));
+    color: #fff; font-family: var(--font-display); font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; letter-spacing: -0.01em;
+    flex: 0 0 auto;
+  }
+  .avatar.sky { background: linear-gradient(135deg, var(--sky-blue), var(--kingfisher-blue)); }
+  .avatar.pink { background: linear-gradient(135deg, var(--paradise-pink), var(--magenta-800)); }
+  .avatar.ink { background: linear-gradient(135deg, var(--ink-600), var(--ink-900)); }
+  .sidebar-user-name { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: #fff; }
+  .sidebar-user-role {
+    font-family: var(--font-mono); font-size: 10.5px;
+    color: rgba(255,255,255,0.5); letter-spacing: 0.04em;
+  }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; overflow: hidden; background: var(--ink-50); }
+  .topbar {
+    height: 64px; flex: 0 0 64px;
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 28px;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--ink-200);
+  }
+  .topbar-title {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: 18px; letter-spacing: -0.01em;
+  }
+  .topbar-meta {
+    font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--ink-500); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    border: 1px solid var(--ink-200); background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-700); cursor: pointer;
+  }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 999px;
+    font-family: var(--font-display); font-weight: 600; font-size: 13.5px;
+    border: none; cursor: pointer;
+    transition: all 160ms var(--ease-standard);
+    white-space: nowrap;
+  }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-primary { background: var(--tropical-magenta); color: #fff; box-shadow: var(--shadow-brand); }
+  .btn-primary:hover { background: var(--magenta-800); }
+  .btn-dark { background: var(--ink-1000); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--ink-1000); box-shadow: inset 0 0 0 1.5px var(--ink-300); }
+  .btn-ghost:hover { box-shadow: inset 0 0 0 1.5px var(--ink-1000); }
+  .btn-soft { background: var(--ink-100); color: var(--ink-900); }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
+  .btn-lg { padding: 14px 24px; font-size: 15px; }
+
+  /* Status pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+  .pill-draft     { background: var(--ink-100);     color: var(--ink-700); }
+  .pill-submitted { background: var(--kingfisher-100); color: var(--kingfisher-800); }
+  .pill-approved  { background: #E6F4EC;            color: #1F6E45; }
+  .pill-rejected  { background: var(--red-100);     color: var(--red-600); }
+  .pill-amended   { background: var(--magenta-100); color: var(--magenta-800); }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border: 1px solid var(--ink-200);
+    border-radius: var(--radius-xl);
+  }
+  .card-pad { padding: 24px; }
+
+  /* Headings inside artboards */
+  .a-h1 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.04; letter-spacing: -0.03em; margin: 0; }
+  .a-h2 { font-family: var(--font-display); font-weight: 800; font-size: 28px; line-height: 1.08; letter-spacing: -0.02em; margin: 0; }
+  .a-h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.2; letter-spacing: -0.01em; margin: 0; }
+  .a-h4 { font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.2; margin: 0; }
+  .a-mono { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-600); }
+  .a-overline {
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-500);
+  }
+  .a-num {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 56px; letter-spacing: -0.03em; line-height: 0.95;
+  }
+  .a-num .accent { color: var(--tropical-magenta); }
+
+  /* Tables */
+  .tbl { width: 100%; border-collapse: collapse; font-family: var(--font-body); }
+  .tbl th {
+    text-align: left; padding: 12px 14px;
+    font-family: var(--font-mono); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-500); border-bottom: 1px solid var(--ink-200);
+    background: var(--ink-50);
+  }
+  .tbl td {
+    padding: 14px; vertical-align: middle;
+    border-bottom: 1px solid var(--ink-100);
+    font-size: 13.5px; color: var(--ink-900);
+  }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr.hl td { background: var(--magenta-100); }
+
+  /* Field */
+  .field-label {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 12.5px; color: var(--ink-700);
+    display: block; margin-bottom: 6px;
+  }
+  .field-input {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--ink-300); border-radius: 10px;
+    font-family: var(--font-body); font-size: 14px;
+    background: #fff; color: var(--ink-1000);
+  }
+  .field-input.disabled { background: var(--ink-50); color: var(--ink-500); }
+
+  /* Sparkline / heatmap helpers */
+  .heat-cell {
+    aspect-ratio: 1 / 1; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  }
+
+  /* Mobile-frame inner shell */
+  .mob {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    background: var(--ink-50);
+    font-family: var(--font-body);
+    color: var(--ink-1000);
+    overflow: hidden;
+  }
+  .mob-status {
+    height: 38px; flex: 0 0 38px;
+    display: flex; align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 22px 6px;
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 13px; color: var(--ink-1000);
+    background: #fff;
+  }
+  .mob-status-right { display: inline-flex; align-items: center; gap: 5px; }
+  .mob-status-right svg { width: 13px; height: 13px; }
+  .mob-topbar {
+    height: 52px; flex: 0 0 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; background: #fff;
+    border-bottom: 1px solid var(--ink-200);
+  }
+  .mob-tabbar {
+    flex: 0 0 76px; padding: 8px 16px 20px;
+    background: #fff; border-top: 1px solid var(--ink-200);
+    display: flex; justify-content: space-around;
+  }
+  .mob-tab {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: var(--ink-500);
+    font-family: var(--font-display); font-weight: 600; font-size: 10.5px;
+  }
+  .mob-tab.active { color: var(--tropical-magenta); }
+  .mob-tab svg { width: 22px; height: 22px; }
+  .mob-content { flex: 1; overflow: hidden; padding: 16px; }
+
+  /* Notch */
+  .notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 28px; background: #000; border-radius: 14px; z-index: 5;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="screens/shared.jsx"></script>
+<script type="text/babel" src="screens/daily-shared.jsx"></script>
+<script type="text/babel" src="screens/auth.jsx"></script>
+<script type="text/babel" src="screens/daily-log.jsx"></script>
+<script type="text/babel" src="screens/time-entry.jsx"></script>
+<script type="text/babel" src="screens/weekly-summary.jsx"></script>
+<script type="text/babel" src="screens/timer.jsx"></script>
+<script type="text/babel" src="screens/approvals.jsx"></script>
+<script type="text/babel" src="screens/projects-admin.jsx"></script>
+<script type="text/babel" src="screens/mobile.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script>
+  // Replace feather icons after React renders
+  function repaintFeather() {
+    if (window.feather) window.feather.replace({ 'stroke-width': 2 });
+  }
+  // Run periodically to catch newly-rendered icons
+  setTimeout(repaintFeather, 200);
+  setTimeout(repaintFeather, 600);
+  setTimeout(repaintFeather, 1500);
+  // Also call repeatedly during scroll/zoom of canvas
+  const obs = new MutationObserver(() => {
+    if (document.querySelectorAll('i[data-feather]').length) repaintFeather();
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+</script>
+
+</body>
+</html>
