@@ -2,8 +2,6 @@
   "extends": "@repo/tsconfig/node.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "outDir": "dist",
-    "rootDir": "src",
     "paths": {
       "@/*": ["./src/*"],
       "@repo/shared-types": ["../../packages/shared-types/src"]
