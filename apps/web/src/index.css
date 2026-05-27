@@ -1,0 +1,98 @@
+/* ── Google Fonts: Red Hat Mono ─────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Red+Hat+Mono:ital,wght@0,300..700;1,300..700&display=swap");
+@import "tailwindcss";
+
+/* ── Design token import ────────────────────────────────────────── */
+/* Tokens from design_handoff_calcey_hours/design/design_system/colors_and_type.css
+   are re-declared here as Tailwind v4 theme tokens so they're usable
+   with Tailwind utility classes (bg-tropical-magenta, text-ink-1000, etc.) */
+
+@theme {
+  /* Brand */
+  --color-tropical-magenta: #AD1AAC;
+  --color-sky-blue: #59CBE8;
+  --color-paradise-pink: #DF4661;
+  --color-kingfisher-blue: #307FE2;
+  --color-koha-red: #E4002B;
+
+  /* Magenta tints */
+  --color-magenta-100: #F7E8F7;
+  --color-magenta-200: #EBC5EB;
+  --color-magenta-400: #CE6BCD;
+  --color-magenta-600: #B833B7;
+  --color-magenta-800: #8E158D;
+
+  /* Kingfisher tints */
+  --color-kingfisher-100: #E6F0FC;
+  --color-kingfisher-200: #C2D9F7;
+  --color-kingfisher-400: #74A8EC;
+  --color-kingfisher-600: #2068C5;
+  --color-kingfisher-800: #1A4F96;
+
+  /* Sky tints */
+  --color-sky-100: #EAF8FC;
+  --color-sky-200: #C9EDF6;
+  --color-sky-400: #8BDAEE;
+  --color-sky-600: #2FB0D2;
+  --color-sky-800: #1F7E97;
+
+  /* Pink / Red */
+  --color-pink-100: #FCEBEE;
+  --color-pink-600: #C6354F;
+  --color-red-100: #FCE0E5;
+  --color-red-600: #B80022;
+
+  /* Ink (neutrals) */
+  --color-ink-1000: #0B0B12;
+  --color-ink-900: #15151D;
+  --color-ink-800: #2A2A36;
+  --color-ink-700: #3F3F50;
+  --color-ink-600: #5A5A6E;
+  --color-ink-500: #7B7B8E;
+  --color-ink-400: #A6A6B5;
+  --color-ink-300: #C9C9D3;
+  --color-ink-200: #E4E4EA;
+  --color-ink-100: #F1F1F4;
+  --color-ink-50: #F8F8FA;
+
+  /* Status */
+  --color-status-success: #2C9F69;
+  --color-status-warning: #E8A33A;
+  --color-status-danger: #E4002B;
+  --color-status-info: #307FE2;
+
+  /* Shadows */
+  --shadow-brand: 0 18px 50px rgba(173, 26, 172, 0.28);
+  --shadow-focus: 0 0 0 3px rgba(48, 127, 226, 0.35);
+
+  /* Font families */
+  --font-display: "Red Hat Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Red Hat Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Red Hat Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ── Local variable font: Red Hat Display ───────────────────────── */
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Red Hat Display";
+  src: url("/fonts/RedHatDisplay-Italic-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ── Base styles ────────────────────────────────────────────────── */
+html,
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink-1000);
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

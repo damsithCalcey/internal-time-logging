@@ -1,2 +1,35 @@
-.claude/skills
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build outputs
+dist/
+build/
+.next/
+out/
+
+# turbo
+.turbo/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# test / coverage
+coverage/
+
+# TypeScript
 *.tsbuildinfo
+
+# Claude Code
+.claude/skills
