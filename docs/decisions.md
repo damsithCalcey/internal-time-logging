@@ -38,6 +38,40 @@ Tracks every architectural and design decision made during development. Updated 
 
 ---
 
+## Stage 2 — Frontend Shell & Auth Slice
+
+### D2-01 · `AuthProvider` exposes `meError` for inactive-account handling
+
+**Decision:** The auth context includes a `meError: Error | null` field in addition to `user`, `session`, and `isLoading`. `RequireAuth` reads `meError` and renders a dedicated "Account deactivated" screen when it is an `ApiError` with status 403.
+
+**Why:** The BFF returns 403 when `app_metadata.is_active = false` on a JWT that is otherwise valid. Without surfacing the error, a deactivated user would see an infinite loading state or an unexplained redirect loop. The deactivated screen gives a clear message and a sign-out button.
+
+---
+
+### D2-02 · Mobile nav uses a left-side drawer, not a bottom tab bar
+
+**Decision:** On screens narrower than 768px, navigation is a slide-in drawer triggered by a hamburger button in the top bar. The mobile design files show a bottom tab bar (iOS-style), but dev plan §3/Stage 2 explicitly specifies "drawer nav under 768px."
+
+**Why:** Dev plan takes priority over design files per CLAUDE.md. A drawer also keeps a single navigation component (`Sidebar`) reused across desktop and mobile, rather than maintaining a separate tab-bar component with different navigation semantics.
+
+---
+
+### D2-03 · Route `/app/team` for admin-users slice
+
+**Decision:** The manager-only team management route is `/app/team` (matching the design IA) rather than `/app/admin` (the BFF slice name). The BFF feature slice remains named `admin-users`.
+
+**Why:** The design handoff README uses "Team" as the nav label with path `/app/team`. Keeping the URL user-facing name consistent with the nav label avoids confusion. The BFF slice name is an implementation detail invisible to users.
+
+---
+
+### D2-04 · HTTP client fetches a fresh session token on every request
+
+**Decision:** `apps/web/src/shared/http.ts` calls `supabase.auth.getSession()` before each request to get the current access token rather than storing the token in module state.
+
+**Why:** The Supabase client handles silent token refresh internally. Calling `getSession()` always returns the current (post-refresh) token. Storing the token would require subscribing to `onAuthStateChange` and keeping module state in sync — unnecessary complexity for an MVP where request frequency is low.
+
+---
+
 ## Stage 0 — Discovery & Monorepo Scaffold
 
 ### D0-01 · B1: ERD drift — `amended_at`, `amended_by`, `original_hours` columns

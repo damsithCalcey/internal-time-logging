@@ -87,12 +87,110 @@
   font-display: swap;
 }
 
+/* ── Design token aliases (original names for CSS components) ───── */
+/* These mirror the @theme tokens above so raw CSS can use var(--tropical-magenta) etc. */
+:root {
+  --tropical-magenta: #AD1AAC;
+  --sky-blue:         #59CBE8;
+  --paradise-pink:    #DF4661;
+  --kingfisher-blue:  #307FE2;
+  --koha-red:         #E4002B;
+
+  --magenta-100: #F7E8F7;
+  --magenta-200: #EBC5EB;
+  --magenta-400: #CE6BCD;
+  --magenta-600: #B833B7;
+  --magenta-800: #8E158D;
+
+  --kingfisher-100: #E6F0FC;
+  --kingfisher-200: #C2D9F7;
+  --kingfisher-400: #74A8EC;
+  --kingfisher-600: #2068C5;
+  --kingfisher-800: #1A4F96;
+
+  --sky-100: #EAF8FC;
+  --sky-200: #C9EDF6;
+  --sky-400: #8BDAEE;
+  --sky-600: #2FB0D2;
+  --sky-800: #1F7E97;
+
+  --pink-100: #FCEBEE;
+  --pink-600: #C6354F;
+  --red-100:  #FCE0E5;
+  --red-600:  #B80022;
+
+  --ink-1000: #0B0B12;
+  --ink-900:  #15151D;
+  --ink-800:  #2A2A36;
+  --ink-700:  #3F3F50;
+  --ink-600:  #5A5A6E;
+  --ink-500:  #7B7B8E;
+  --ink-400:  #A6A6B5;
+  --ink-300:  #C9C9D3;
+  --ink-200:  #E4E4EA;
+  --ink-100:  #F1F1F4;
+  --ink-50:   #F8F8FA;
+
+  --shadow-sm:    0 1px 2px rgba(11, 11, 18, 0.06), 0 1px 1px rgba(11, 11, 18, 0.04);
+  --shadow-md:    0 4px 14px rgba(11, 11, 18, 0.08), 0 2px 4px rgba(11, 11, 18, 0.04);
+  --shadow-lg:    0 14px 40px rgba(11, 11, 18, 0.12), 0 4px 8px rgba(11, 11, 18, 0.05);
+  --shadow-brand: 0 18px 50px rgba(173, 26, 172, 0.28);
+  --shadow-focus: 0 0 0 3px rgba(48, 127, 226, 0.35);
+
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;
+  --radius-pill: 999px;
+
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-quick:     160ms;
+  --dur-base:      240ms;
+
+  --font-display: "Red Hat Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body:    "Red Hat Display", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    "Red Hat Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 /* ── Base styles ────────────────────────────────────────────────── */
 html,
 body {
   font-family: var(--font-body);
-  color: var(--color-ink-1000);
-  background: #ffffff;
+  color: var(--ink-1000);
+  background: var(--ink-50);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* ── Component helpers ──────────────────────────────────────────── */
+
+/* Sidebar nav active state — used via NavLink's isActive callback */
+.nav-item-active {
+  background: rgba(173, 26, 172, 0.18);
+  color: #fff !important;
+  box-shadow: inset 2px 0 0 var(--tropical-magenta);
+}
+
+/* Field input focus ring */
+.field-input:focus {
+  outline: none;
+  border-color: var(--kingfisher-blue);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────── */
+@keyframes tl-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(228, 0, 43, 0.22); }
+  50%       { box-shadow: 0 0 0 7px rgba(228, 0, 43, 0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

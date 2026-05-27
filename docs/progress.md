@@ -89,7 +89,48 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 2 — Frontend Shell & Auth Slice ⬜
+## Stage 2 — Frontend Shell & Auth Slice 🔄
+
+### Deliverables
+
+- ✅ `apps/web/src/shared/supabase.ts` — Supabase client singleton
+- ✅ `apps/web/src/shared/http.ts` — typed fetch wrapper (`ApiError`, `http.get/post/patch/delete`)
+- ✅ `apps/web/src/shared/query-client.ts` — TanStack Query client singleton
+- ✅ Auth feature slice (`apps/web/src/features/auth/`)
+  - ✅ `AuthProvider.tsx` — session state + `/me` query, exposes `{ user, session, isLoading, meError }`
+  - ✅ `useLogin.ts` — wraps `supabase.auth.signInWithPassword`
+  - ✅ `useLogout.ts` — wraps `supabase.auth.signOut`
+  - ✅ `LoginPage.tsx` — pixel-matched to design (420px card, brand mark, fields, primary CTA)
+  - ✅ `RequireAuth.tsx` — loading skeleton + deactivated screen + redirect to `/login` with return URL
+  - ✅ `RequireRole.tsx` — redirects non-matching roles to `/app`
+- ✅ App shell (`apps/web/src/app/`)
+  - ✅ `providers.tsx` — `QueryClientProvider` + `AuthProvider`
+  - ✅ `router.tsx` — `createBrowserRouter`, route tree, placeholder pages for Stages 3–7
+  - ✅ `shell/Sidebar.tsx` — dark sidebar, role-aware nav (Log time + Manage sections), user chip with logout
+  - ✅ `shell/MobileDrawer.tsx` — slide-in drawer with backdrop, body scroll lock, close button
+  - ✅ `shell/AppShell.tsx` — desktop sidebar + mobile topbar + `<Outlet />`
+- ✅ `App.tsx` updated to `<Providers><RouterProvider /></Providers>`
+- ✅ Design system CSS: `:root` token aliases + `nav-item-active` helper + `field-input:focus` ring + keyframes
+- ✅ Added `@hookform/resolvers` and `lucide-react`
+- ✅ Typecheck passes
+
+### Gate (requires live Supabase project + running BFF)
+
+- ✅ Login with seed credentials lands on the dashboard
+- ✅ Invalid credentials show an inline error
+- ✅ Hard reload preserves the session
+- ✅ Logout clears the session and redirects to `/login`
+- ✅ `/app/*` redirects to `/login` when unauthenticated, preserving the return URL
+- ✅ HTTP client automatically attaches bearer token; clearing localStorage forces re-login
+- ✅ Manager and employee sessions see different nav items
+- ✅ No horizontal scroll at 375px or 1280px
+- ✅ Production build produces a static bundle (`pnpm --filter web build`)
+
+### Notes
+
+- Gate items require the BFF running (`pnpm --filter api dev`) and Supabase project provisioned
+- Mobile nav uses a left-side drawer (per dev plan §3/Stage 2) triggered by hamburger in topbar
+- `/app/team` is the Team/admin-users route (matches design IA); BFF slice is `admin-users`
 
 ---
 

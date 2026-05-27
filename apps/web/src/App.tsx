@@ -1,17 +1,11 @@
-import { type HealthResponse, HealthResponseSchema } from '@repo/shared-types'
-
-// Stage 0 smoke test: proves @repo/shared-types is wired.
-// A breaking change in HealthResponseSchema will cause this file's typecheck to fail.
-const _schemaWiring: HealthResponse = HealthResponseSchema.parse({ ok: true })
-void _schemaWiring
+import { RouterProvider } from 'react-router-dom'
+import { Providers } from './app/providers'
+import { router } from './app/router'
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-ink-50 flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-tropical-magenta font-display font-bold text-4xl mb-2">Calcey Hours</p>
-        <p className="text-ink-600 text-sm">Stage 0 scaffold — auth and features coming in Stage 2+.</p>
-      </div>
-    </div>
+    <Providers>
+      <RouterProvider router={router} />
+    </Providers>
   )
 }
