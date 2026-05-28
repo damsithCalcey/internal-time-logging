@@ -1,4 +1,4 @@
-import * as timerSessionsRepo from '@/db/repositories/timer-sessions.js'
+import { timerSessionsRepo } from '@/db/repositories/index.js'
 import type { Tx } from '@/db/tx.js'
 
 // Called by admin-users/service via the acyclic service graph (§1.3)

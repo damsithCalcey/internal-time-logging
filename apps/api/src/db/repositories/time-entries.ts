@@ -13,48 +13,102 @@ import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db
 
-export const findById = (d: DB, id: string): Promise<TimeEntry | null> =>
+export type EnrichedTimeEntryRow = {
+  id: string
+  userId: string
+  projectId: string
+  taskId: string
+  entryDate: string
+  hours: string
+  notes: string | null
+  status: TimeEntry['status']
+  managerNote: string | null
+  amendedAt: Date | null
+  amendedBy: string | null
+  originalHours: string | null
+  createdAt: Date
+  updatedAt: Date
+  userName: string
+  projectName: string
+  taskName: string
+  amendedByName: string | null
+}
+
+export type EnrichedLogFilters = {
+  date?: string
+  from?: string
+  to?: string
+  userId?: string
+}
+
+export type QueueFilters = {
+  status?: TimeEntry['status']
+  userId?: string
+  from?: string
+  to?: string
+}
+
+// Patch produced by the TimeEntry domain entity. May include a `status` field
+// when the operation is a state transition, or omit it for guarded field updates.
+export type TimeEntryPatch = Partial<Omit<NewTimeEntry, 'id' | 'createdAt'>>
+
+export interface TimeEntriesRepo {
+  findById(d: DB, id: string): Promise<TimeEntry | null>
+  findByUser(d: DB, userId: string): Promise<TimeEntry[]>
+  findByUserAndDate(d: DB, userId: string, entryDate: string): Promise<TimeEntry[]>
+  createDraft(d: DB, data: Omit<NewTimeEntry, 'status'>): Promise<TimeEntry>
+  sumHoursForDate(d: DB, userId: string, entryDate: string, excludeId?: string): Promise<number>
+  rejectAllSubmittedFor(d: DB, userId: string, managerNote: string): Promise<TimeEntry[]>
+  // Conditional UPDATE: applies `patch` only when the row is still in `expectedStatus`.
+  // Returns null when the guard fails (concurrent transition) — caller treats as 409.
+  applyPlan(
+    d: DB,
+    id: string,
+    expectedStatus: TimeEntry['status'],
+    patch: TimeEntryPatch,
+  ): Promise<TimeEntry | null>
+  findByStatus(d: DB, status: TimeEntry['status']): Promise<TimeEntry[]>
+  findSubmittedByUser(d: DB, userId: string): Promise<TimeEntry[]>
+  countForDateExcluding(
+    d: DB,
+    userId: string,
+    entryDate: string,
+    excludeId: string,
+  ): Promise<number>
+  findEnrichedForLog(d: DB, filters: EnrichedLogFilters): Promise<EnrichedTimeEntryRow[]>
+  findForQueue(d: DB, filters: QueueFilters): Promise<EnrichedTimeEntryRow[]>
+}
+
+export const findById: TimeEntriesRepo['findById'] = (d, id) =>
   d
     .select()
     .from(timeEntries)
     .where(eq(timeEntries.id, id))
     .then((r) => r[0] ?? null)
 
-export const findByUser = (d: DB, userId: string): Promise<TimeEntry[]> =>
+export const findByUser: TimeEntriesRepo['findByUser'] = (d, userId) =>
   d.select().from(timeEntries).where(eq(timeEntries.userId, userId))
 
-export const findByUserAndDate = (d: DB, userId: string, entryDate: string): Promise<TimeEntry[]> =>
+export const findByUserAndDate: TimeEntriesRepo['findByUserAndDate'] = (d, userId, entryDate) =>
   d
     .select()
     .from(timeEntries)
     .where(and(eq(timeEntries.userId, userId), eq(timeEntries.entryDate, entryDate)))
 
-export const createDraft = (d: DB, data: Omit<NewTimeEntry, 'status'>): Promise<TimeEntry> =>
+export const createDraft: TimeEntriesRepo['createDraft'] = (d, data) =>
   d
     .insert(timeEntries)
     .values({ ...data, status: 'draft' })
     .returning()
     .then((r) => r[0]!)
 
-export const update = (
-  d: DB,
-  id: string,
-  data: Partial<Omit<NewTimeEntry, 'id' | 'createdAt'>>,
-): Promise<TimeEntry | null> =>
-  d
-    .update(timeEntries)
-    .set(data)
-    .where(eq(timeEntries.id, id))
-    .returning()
-    .then((r) => r[0] ?? null)
-
 // Sum of hours for a user on a date, excluding a specific entry (for daily cap check - S1)
-export const sumHoursForDate = async (
-  d: DB,
-  userId: string,
-  entryDate: string,
-  excludeId?: string,
-): Promise<number> => {
+export const sumHoursForDate: TimeEntriesRepo['sumHoursForDate'] = async (
+  d,
+  userId,
+  entryDate,
+  excludeId,
+) => {
   const conditions = excludeId
     ? and(
         eq(timeEntries.userId, userId),
@@ -72,46 +126,41 @@ export const sumHoursForDate = async (
 }
 
 // Used by admin-users/service via the acyclic service graph (§1.3)
-export const rejectAllSubmittedFor = (
-  d: DB,
-  userId: string,
-  managerNote: string,
-): Promise<TimeEntry[]> =>
+export const rejectAllSubmittedFor: TimeEntriesRepo['rejectAllSubmittedFor'] = (
+  d,
+  userId,
+  managerNote,
+) =>
   d
     .update(timeEntries)
     .set({ status: 'rejected', managerNote })
     .where(and(eq(timeEntries.userId, userId), eq(timeEntries.status, 'submitted')))
     .returning()
 
-// Conditional UPDATE — returns the row only if the update applied (race protection)
-export const transitionStatus = (
-  d: DB,
-  id: string,
-  fromStatus: TimeEntry['status'],
-  toStatus: TimeEntry['status'],
-  extra?: Partial<Omit<NewTimeEntry, 'id' | 'status' | 'createdAt'>>,
-): Promise<TimeEntry | null> =>
+// Race-safe persistence: SET patch WHERE id=? AND status=expectedStatus
+// Used by every TimeEntry entity operation (submit / withdraw / approve / reject / amend / edit).
+export const applyPlan: TimeEntriesRepo['applyPlan'] = (d, id, expectedStatus, patch) =>
   d
     .update(timeEntries)
-    .set({ status: toStatus, ...extra })
-    .where(and(eq(timeEntries.id, id), eq(timeEntries.status, fromStatus)))
+    .set(patch)
+    .where(and(eq(timeEntries.id, id), eq(timeEntries.status, expectedStatus)))
     .returning()
     .then((r) => r[0] ?? null)
 
-export const findByStatus = (d: DB, status: TimeEntry['status']): Promise<TimeEntry[]> =>
+export const findByStatus: TimeEntriesRepo['findByStatus'] = (d, status) =>
   d.select().from(timeEntries).where(eq(timeEntries.status, status))
 
-export const findSubmittedByUser = (d: DB, userId: string): Promise<TimeEntry[]> =>
+export const findSubmittedByUser: TimeEntriesRepo['findSubmittedByUser'] = (d, userId) =>
   d
     .select()
     .from(timeEntries)
     .where(and(eq(timeEntries.userId, userId), eq(timeEntries.status, 'submitted')))
 
-export const countForDateExcluding = (
-  d: DB,
-  userId: string,
-  entryDate: string,
-  excludeId: string,
+export const countForDateExcluding: TimeEntriesRepo['countForDateExcluding'] = (
+  d,
+  userId,
+  entryDate,
+  excludeId,
 ) =>
   d
     .select({ count: sql<number>`count(*)::int` })
@@ -126,15 +175,7 @@ export const countForDateExcluding = (
     .then((r) => r[0]?.count ?? 0)
 
 // Enriched log view: time entry joined with user/project/task names for daily log and weekly summary
-export const findEnrichedForLog = (
-  d: DB,
-  filters: {
-    date?: string // YYYY-MM-DD — daily log
-    from?: string // YYYY-MM-DD — weekly lower bound (inclusive)
-    to?: string // YYYY-MM-DD — weekly upper bound (inclusive)
-    userId?: string // undefined = all users (manager all-team view)
-  },
-) => {
+export const findEnrichedForLog: TimeEntriesRepo['findEnrichedForLog'] = (d, filters) => {
   const amendedByUser = alias(users, 'amended_by_user')
 
   return d
@@ -175,15 +216,7 @@ export const findEnrichedForLog = (
 }
 
 // Enriched queue view: time entry joined with user/project/task names for the approval queue
-export const findForQueue = (
-  d: DB,
-  filters: {
-    status?: TimeEntry['status']
-    userId?: string
-    from?: string
-    to?: string
-  },
-) => {
+export const findForQueue: TimeEntriesRepo['findForQueue'] = (d, filters) => {
   const amendedByUser = alias(users, 'amended_by_user')
 
   return d
@@ -222,3 +255,18 @@ export const findForQueue = (
     )
     .orderBy(timeEntries.entryDate)
 }
+
+export const timeEntriesRepo = {
+  findById,
+  findByUser,
+  findByUserAndDate,
+  createDraft,
+  sumHoursForDate,
+  rejectAllSubmittedFor,
+  applyPlan,
+  findByStatus,
+  findSubmittedByUser,
+  countForDateExcluding,
+  findEnrichedForLog,
+  findForQueue,
+} satisfies TimeEntriesRepo

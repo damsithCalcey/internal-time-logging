@@ -1,5 +1,5 @@
 import { db } from '@/db/client.js'
-import * as usersRepo from '@/db/repositories/users.js'
+import { usersRepo } from '@/db/repositories/index.js'
 import { serializeUser } from '@/db/serializers.js'
 import { withTx } from '@/db/tx.js'
 import * as timeEntriesService from '@/features/time-entries/service.js'

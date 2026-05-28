@@ -1,6 +1,5 @@
 import { db } from '@/db/client.js'
-import * as projectsRepo from '@/db/repositories/projects.js'
-import * as tasksRepo from '@/db/repositories/tasks.js'
+import { projectsRepo, tasksRepo } from '@/db/repositories/index.js'
 import { serializeTask } from '@/db/serializers.js'
 import { ConflictError, NotFoundError } from '@/shared/errors.js'
 import type { CreateTaskBody, UpdateTaskBody } from '@repo/shared-types'

@@ -1,25 +1,7 @@
+import type { ProjectListRow as RepoProjectListRow } from './repositories/projects.js'
+import type { EnrichedTimeEntryRow } from './repositories/time-entries.js'
+import type { ProjectMemberRow } from './repositories/user-projects.js'
 import type { Project, Task, TimeEntry, User, UserProject } from './schema.js'
-
-type EnrichedRow = {
-  id: string
-  userId: string
-  projectId: string
-  taskId: string
-  entryDate: string
-  hours: string
-  notes: string | null
-  status: TimeEntry['status']
-  managerNote: string | null
-  amendedAt: Date | null
-  amendedBy: string | null
-  originalHours: string | null
-  createdAt: Date
-  updatedAt: Date
-  userName: string
-  projectName: string
-  taskName: string
-  amendedByName: string | null
-}
 
 export function serializeTimeEntry(entry: TimeEntry) {
   return {
@@ -40,21 +22,9 @@ export function serializeProject(p: Project) {
   }
 }
 
-type ProjectListRow = {
-  id: string
-  name: string
-  description: string | null
-  createdAt: Date
-  updatedAt: Date
-  taskCount: number
-  memberCount: number
-}
-
-export function serializeProjectListRow(r: ProjectListRow) {
+export function serializeProjectListRow(r: RepoProjectListRow) {
   return {
     ...r,
-    taskCount: Number(r.taskCount),
-    memberCount: Number(r.memberCount),
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }
@@ -83,22 +53,14 @@ export function serializeUserProject(a: UserProject) {
   }
 }
 
-type MemberRow = {
-  userId: string
-  fullName: string
-  email: string
-  role: User['role']
-  assignedAt: Date
-}
-
-export function serializeMember(m: MemberRow) {
+export function serializeMember(m: ProjectMemberRow) {
   return {
     ...m,
     assignedAt: m.assignedAt.toISOString(),
   }
 }
 
-export function serializeEnrichedEntry(row: EnrichedRow) {
+export function serializeEnrichedEntry(row: EnrichedTimeEntryRow) {
   return {
     ...row,
     hours: parseFloat(row.hours),

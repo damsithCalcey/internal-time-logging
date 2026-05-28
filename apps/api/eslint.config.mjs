@@ -20,6 +20,13 @@ export default [
       'local/no-undocumented-cross-slice-service': 'warn',
     },
   },
+  // No inline Drizzle queries inside features — the repo boundary is non-negotiable
+  {
+    files: ['src/features/**/*.ts'],
+    rules: {
+      'local/no-drizzle-in-features': 'error',
+    },
+  },
   {
     ignores: ['dist/**', 'migrations/**'],
   },

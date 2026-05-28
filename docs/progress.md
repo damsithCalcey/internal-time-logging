@@ -287,3 +287,15 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 ---
 
 ## Stage 9 — Pre-Launch: Security, UAT, Sign-off ⬜
+
+---
+
+## Architectural Hardening (post-Stage 6) ✅
+
+- ✅ Repository interfaces published per file (`UsersRepo`, `ProjectsRepo`, `TasksRepo`, `UserProjectsRepo`, `TimeEntriesRepo`, `TimerSessionsRepo`).
+- ✅ Typed bindings (`usersRepo`, …) re-exported from `db/repositories/index.ts`; all `features/**` services import from the barrel.
+- ✅ `local/no-drizzle-in-features` ESLint rule (error) added — `drizzle-orm` and `db/schema` imports are now CI-blocked inside `features/**` (DH-01).
+- ✅ `TimeEntry` domain entity (`apps/api/src/domain/time-entry.ts`) with `submit / withdraw / approve / reject / editAsEmployee / editAsManager`; amendment side-effects (D5-03) live here.
+- ✅ `timeEntriesRepo.applyPlan` replaces split `transitionStatus`/`update`; every write is status-guarded.
+- ✅ `time-entries/service.ts` and `approvals/service.ts` consume the entity; no state-machine call remains in either service.
+- ✅ 21 pure entity unit tests added; full test suite (60 tests) passes.

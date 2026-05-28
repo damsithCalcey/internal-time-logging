@@ -1,5 +1,5 @@
 import { db } from '@/db/client.js'
-import * as usersRepo from '@/db/repositories/users.js'
+import { usersRepo } from '@/db/repositories/index.js'
 import type { AppEnv } from '@/shared/auth.js'
 import type { UserOption } from '@repo/shared-types'
 import { Hono } from 'hono'

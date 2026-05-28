@@ -1,7 +1,5 @@
 import { db } from '@/db/client.js'
-import * as projectsRepo from '@/db/repositories/projects.js'
-import * as tasksRepo from '@/db/repositories/tasks.js'
-import * as userProjectsRepo from '@/db/repositories/user-projects.js'
+import { projectsRepo, tasksRepo, userProjectsRepo } from '@/db/repositories/index.js'
 import {
   serializeMember,
   serializeProject,

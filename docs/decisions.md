@@ -322,3 +322,27 @@ Stage 1 gate explicitly verifies these grants via `information_schema.role_table
 | OI-07 | Cross-device timer sync (refresh-only) | Stage 0 ✅ confirmed | Refresh-on-load only; no realtime subscription |
 
 ---
+
+## Architectural Hardening (post-Stage 6)
+
+### DH-01 · Typed repository bindings + `no-drizzle-in-features` lint rule
+
+**Decision:** Each repository file now publishes a typed interface (`UsersRepo`, `ProjectsRepo`, `TasksRepo`, `UserProjectsRepo`, `TimeEntriesRepo`, `TimerSessionsRepo`) and a `satisfies`-asserted binding (`usersRepo`, `projectsRepo`, …) exported through `apps/api/src/db/repositories/index.ts`. Services consume only the bound objects from the barrel. A new ESLint rule `local/no-drizzle-in-features` (error) forbids `drizzle-orm`, `drizzle-orm/*`, and `db/schema` imports inside `src/features/**`.
+
+**Why:** SUBMISSION.md called out commit `6c9aee1` as a case where inline Drizzle queries leaked into the projects service — caught in human review, not by tooling. The published interface acts as the contract repos must conform to (signature drift breaks the `satisfies` assertion at compile time). The lint rule promotes the boundary from a documented convention to a CI-enforced one: a service can no longer assemble a query because it has no way to import the operators (`eq`, `and`, etc.) or the table objects. Together they turn the in-slice version of the drift from a review failure into a build failure — the same posture as `no-cross-slice-route-import` for the cross-slice case.
+
+**Notes:**
+- Test files still use namespace imports (`import * as usersRepo from './users.js'`) since they exercise the implementation, not the contract. They are not covered by the lint rule (rule applies to `features/**` only).
+- The barrel re-exports row-shape types (`EnrichedTimeEntryRow`, `ProjectListRow`, `ProjectMemberRow`) so serializers consume a single source of truth instead of redeclaring local row types.
+
+---
+
+### DH-02 · `TimeEntry` domain entity folds D5-03 amendment logic into one place
+
+**Decision:** Introduced `apps/api/src/domain/time-entry.ts` exporting a `TimeEntry` class with `submit()`, `withdraw()`, `approve(actor)`, `reject(actor, note)`, `editAsEmployee(patch)`, and `editAsManager(actor, patch)` methods. Each method is pure (no I/O) and returns a `Plan` of the form `{ ok: false, reason } | { ok: true, expectedStatus, patch }`. The `timeEntriesRepo.applyPlan(d, id, expectedStatus, patch)` repository function persists the plan with a race-guarded `UPDATE … WHERE id = ? AND status = expectedStatus` — replacing the prior split between `transitionStatus` and `update`. The services in `time-entries/service.ts` and `approvals/service.ts` now share the same persistence helper and the same entity surface.
+
+**Why:** D5-03 placed amendment metadata in `updateTimeEntry` for the right reason (one endpoint owns manager edits), but the side-effects — `approved → amended` flip with `originalHours` populate-once, `amended → amended` re-edit that refreshes metadata but preserves `originalHours`, `rejected → draft` flip on employee edit — were spread across two functions and reproduced the state-machine call in three places. Folding them into an entity centralises the within-row semantics and ensures the approvals slice can't drift from the time-entries slice (both call `TimeEntry.from(row).approve(actor)` etc.). The `Plan` shape also lets the repo collapse `transitionStatus` and `update` into a single race-safe `applyPlan` — every write is now status-guarded, including manager edits on `draft`/`submitted`/`rejected` entries which were previously unguarded.
+
+**Tested in** `apps/api/src/domain/time-entry.test.ts` (21 pure tests) covering: rejected→draft flip on employee edit; `originalHours` populate-once semantics across `approved → amended` and subsequent `amended → amended` re-edits; role guards on approve/reject; trim/empty validation on rejection note.
+
+---
