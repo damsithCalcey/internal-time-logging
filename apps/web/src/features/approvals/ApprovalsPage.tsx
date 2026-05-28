@@ -1,32 +1,11 @@
 import { usersApi } from '@/features/projects/api'
+import { StatusBadge } from '@/shared/StatusBadge'
 import type { ApprovalQueueItem } from '@repo/shared-types'
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { Check, Clock, Filter, Loader2, X } from 'lucide-react'
 import { useState } from 'react'
 import { useApproveEntry, useApprovalQueue, useRejectEntry } from './hooks'
-
-// ── Status badge (shared style map) ──────────────────────────────
-
-const STATUS_STYLE: Record<string, { label: string; bg: string; text: string }> = {
-  draft: { label: 'Draft', bg: 'bg-ink-100', text: 'text-ink-600' },
-  submitted: { label: 'Submitted', bg: 'bg-blue-50', text: 'text-blue-700' },
-  approved: { label: 'Approved', bg: 'bg-green-50', text: 'text-green-700' },
-  rejected: { label: 'Rejected', bg: 'bg-red-50', text: 'text-red-700' },
-  amended: { label: 'Amended', bg: 'bg-amber-50', text: 'text-amber-700' },
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_STYLE[status] ?? STATUS_STYLE['draft']!
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 font-mono font-semibold uppercase ${s.bg} ${s.text}`}
-      style={{ fontSize: 10, letterSpacing: '0.1em' }}
-    >
-      {s.label}
-    </span>
-  )
-}
 
 // ── Reject modal ──────────────────────────────────────────────────
 
