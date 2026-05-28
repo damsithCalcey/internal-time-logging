@@ -106,6 +106,32 @@ Tracks every architectural and design decision made during development. Updated 
 
 ---
 
+## Stage 4 — Time Entries Slice
+
+### D4-01 · `timer/service.ts` stub ships in Stage 4 for acyclic service graph
+
+**Decision:** A minimal `apps/api/src/features/timer/service.ts` is created in Stage 4 containing only `discardActiveSessionFor(tx, userId)`. The full timer slice ships in Stage 7.
+
+**Why:** `admin-users/service.deactivate()` depends on `timerService.discardActiveSessionFor` via the acyclic service graph (§1.3). Without the stub, the deactivation workflow cannot compile. Shipping the full timer service is Stage 7 scope; shipping the one function needed by Stage 4 is the minimal viable step.
+
+---
+
+### D4-02 · Local form schema in TeamPage bypasses `.default()` exactOptionalPropertyTypes conflict
+
+**Decision:** `CreateUserPanel` in `TeamPage.tsx` uses a local `CreateFormSchema` (identical to `CreateUserBodySchema` but without `.default('employee')` on `role`) rather than using the shared schema directly as the form resolver.
+
+**Why:** `exactOptionalPropertyTypes: true` in `tsconfig` causes a type error when `zodResolver(CreateUserBodySchema)` is passed to `useForm<z.infer<...>>`. The `role` field's `.default()` makes the Zod input type have `role?: string | undefined` while the output type has `role: string` — the resolver's typed parameter can't satisfy both. A local form schema with `role: z.enum(...)` (no default) resolves the mismatch cleanly. The validation semantics are identical; the shared schema is still used at the API call boundary.
+
+---
+
+### D4-03 · `GET /time-entries` supports optional `date` and `user` query params
+
+**Decision:** The list endpoint returns all entries for the authenticated user when called without params, a specific date when `?date=YYYY-MM-DD` is provided, and another user's entries when `?user=<id>` is provided (managers only — employees cannot specify a different user).
+
+**Why:** Stage 6 will add dedicated daily/weekly endpoints. Stage 4 needs a general-purpose list for the "My entries" page and the daily totals widget. The `date` filter is applied in the repo layer (`findByUserAndDate`) to avoid loading all entries for a user with a long history.
+
+---
+
 ## Stage 0 — Discovery & Monorepo Scaffold
 
 ### D0-01 · B1: ERD drift — `amended_at`, `amended_by`, `original_hours` columns

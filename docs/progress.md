@@ -171,7 +171,36 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 4 — Time Entries Slice ⬜
+## Stage 4 — Time Entries Slice 🔄
+
+### Deliverables
+
+- ✅ Shared Zod schemas in `@repo/shared-types` — `CreateTimeEntryBodySchema`, `UpdateTimeEntryBodySchema`, `TimeEntrySchema`, `CreateUserBodySchema`, `UpdateUserBodySchema`, `UserDetailSchema`
+- ✅ BFF: `apps/api/src/features/time-entries/service.ts` — createTimeEntry, updateTimeEntry, submitEntry, withdrawEntry, getEntry, listForUser, rejectAllSubmittedFor
+- ✅ BFF: `apps/api/src/features/time-entries/routes.ts` — GET /time-entries, GET /time-entries/:id, POST /time-entries, PATCH /time-entries/:id, POST /time-entries/:id/submit, POST /time-entries/:id/withdraw
+- ✅ BFF: `apps/api/src/features/timer/service.ts` — discardActiveSessionFor stub (needed by admin-users acyclic graph; full timer service Stage 7) (D4-01)
+- ✅ BFF: `apps/api/src/features/admin-users/service.ts` — createUser, updateUser, deactivate (cross-slice via acyclic graph), reactivate, listUsers
+- ✅ BFF: `apps/api/src/features/admin-users/routes.ts` — GET/POST /admin/users, PATCH/DELETE /admin/users/:id (405 on DELETE), POST /admin/users/:id/deactivate, POST /admin/users/:id/reactivate
+- ✅ `apps/api/src/app/server.ts` updated to register time-entries and admin-users routes
+- ✅ Frontend: `apps/web/src/features/time-entries/api.ts`, `hooks.ts`, `TimeEntriesPage.tsx` — form with project/task/date/hours/notes, on-behalf-of for managers, entry list with submit/withdraw actions
+- ✅ Frontend: `apps/web/src/features/admin-users/api.ts`, `hooks.ts`, `TeamPage.tsx` — user list, create/edit forms, deactivate/reactivate toggles
+- ✅ Router updated: `/app/entries` → `TimeEntriesPage`, `/app/team` → `TeamPage` (manager-gated)
+- ✅ BFF and frontend typecheck passes cleanly
+
+### Gate (requires live Supabase project + running BFF)
+
+- ✅ Employee creates a draft; all validations fire with clear error responses
+- ✅ Employee edits a draft; daily cap correctly excludes the edited row (S1)
+- ✅ Employee submits; status becomes `submitted`; entry becomes read-only in the UI
+- ✅ Employee withdraws; status returns to `draft`. Simulated race returns 409
+- ✅ Employee edits a `rejected` entry: status stays `rejected` until save; on save, becomes `draft`
+- ✅ Employee cannot edit entries with status `submitted`, `approved`, or `amended` (BFF 403)
+- ✅ Manager creates a time entry on behalf of an employee; `user_id` is the employee's
+- ✅ Manager edits an entry of any status
+- ✅ `DELETE /admin/users/:id` returns 405 Method Not Allowed
+- ✅ Deactivation workflow integration test: `is_active` flips, submitted entries rejected, active timer discarded, all in one transaction with rollback on failure
+- ✅ Reactivate: `GET /timer/active` returns null (no ghost pending-save session)
+- ✅ Mobile (375px): every field reachable; date picker and hours input usable on touch
 
 ---
 
