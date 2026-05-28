@@ -9,6 +9,8 @@ import authRoutes from '@/features/auth/routes.js'
 import projectRoutes from '@/features/projects/routes.js'
 import taskRoutes from '@/features/tasks/routes.js'
 import userRoutes from '@/features/users/routes.js'
+import timeEntriesRoutes from '@/features/time-entries/routes.js'
+import adminUsersRoutes from '@/features/admin-users/routes.js'
 
 export const app = new Hono()
 
@@ -30,6 +32,8 @@ api.route('/', authRoutes)
 api.route('/', projectRoutes)
 api.route('/', taskRoutes)
 api.route('/', userRoutes)
+api.route('/', timeEntriesRoutes)
+api.route('/', adminUsersRoutes)
 
 app.route('/', api)
 
