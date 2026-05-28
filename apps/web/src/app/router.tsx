@@ -3,6 +3,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
 import { ProjectsPage } from '@/features/projects'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { ErrorPage } from './ErrorPage'
 import { AppShell } from './shell/AppShell'
 
 function Placeholder({ title, stage }: { title: string; stage: number }) {
@@ -26,11 +27,12 @@ export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/app" replace /> },
 
   // Login
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <ErrorPage /> },
 
   // Authenticated shell
   {
     path: '/app',
+    errorElement: <ErrorPage />,
     element: (
       <RequireAuth>
         <AppShell />

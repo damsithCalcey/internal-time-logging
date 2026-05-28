@@ -372,34 +372,41 @@ function AddTaskForm({ projectId, onDone }: { projectId: string; onDone: () => v
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mt-1 flex items-center gap-2">
-      <input
-        {...register('name')}
-        className="field-input border-ink-200 font-display text-ink-1000 placeholder:text-ink-400 flex-1 rounded-xl border bg-white px-3 py-2 outline-none"
-        style={{ fontSize: 13.5 }}
-        placeholder="Task name"
-        autoFocus
-      />
-      <button
-        type="submit"
-        disabled={createTask.isPending}
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white transition-opacity disabled:opacity-60"
-        style={{ background: 'var(--tropical-magenta)' }}
-        title="Add task"
-      >
-        <Check size={13} />
-      </button>
-      <button
-        type="button"
-        onClick={onDone}
-        className="text-ink-500 bg-ink-100 hover:bg-ink-200 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-colors"
-        title="Cancel"
-      >
-        <X size={13} />
-      </button>
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-1 flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <input
+          {...register('name')}
+          className="field-input border-ink-200 font-display text-ink-1000 placeholder:text-ink-400 flex-1 rounded-xl border bg-white px-3 py-2 outline-none"
+          style={{ fontSize: 13.5 }}
+          placeholder="Task name"
+          autoFocus
+        />
+        <button
+          type="submit"
+          disabled={createTask.isPending}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white transition-opacity disabled:opacity-60"
+          style={{ background: 'var(--tropical-magenta)' }}
+          title="Add task"
+        >
+          <Check size={13} />
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="text-ink-500 bg-ink-100 hover:bg-ink-200 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-colors"
+          title="Cancel"
+        >
+          <X size={13} />
+        </button>
+      </div>
       {errors.name && (
-        <p className="text-koha-red font-display absolute" style={{ fontSize: 11 }}>
+        <p className="text-koha-red font-display px-1" style={{ fontSize: 11 }}>
           {errors.name.message}
+        </p>
+      )}
+      {createTask.error && (
+        <p className="text-koha-red font-display px-1" style={{ fontSize: 11 }}>
+          {(createTask.error as { message?: string })?.message ?? 'Failed to create task'}
         </p>
       )}
     </form>
@@ -464,6 +471,12 @@ function AssignUserPicker({
           placeholder="Search by name or email…"
           autoFocus
         />
+
+        {assign.error && (
+          <p className="text-koha-red font-display mb-2" style={{ fontSize: 12 }}>
+            {(assign.error as { message?: string })?.message ?? 'Failed to assign member'}
+          </p>
+        )}
 
         <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto">
           {available.length === 0 && (
@@ -608,7 +621,7 @@ function ProjectDetailPanel({ projectId }: { projectId: string }) {
               />
               {editingTaskId === task.id ? (
                 <form
-                  className="flex flex-1 items-center gap-2"
+                  className="flex flex-1 flex-col gap-1"
                   onSubmit={(e) => {
                     e.preventDefault()
                     const input = e.currentTarget.elements.namedItem('name') as HTMLInputElement
@@ -618,27 +631,34 @@ function ProjectDetailPanel({ projectId }: { projectId: string }) {
                     )
                   }}
                 >
-                  <input
-                    name="name"
-                    defaultValue={task.name}
-                    className="field-input border-ink-200 font-display text-ink-1000 flex-1 rounded-lg border bg-white px-2.5 py-1.5 outline-none"
-                    style={{ fontSize: 13 }}
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    disabled={updateTask.isPending}
-                    className="text-tropical-magenta transition-opacity hover:opacity-75 disabled:opacity-40"
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingTaskId(null)}
-                    className="text-ink-400 hover:text-ink-700 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      name="name"
+                      defaultValue={task.name}
+                      className="field-input border-ink-200 font-display text-ink-1000 flex-1 rounded-lg border bg-white px-2.5 py-1.5 outline-none"
+                      style={{ fontSize: 13 }}
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={updateTask.isPending}
+                      className="text-tropical-magenta transition-opacity hover:opacity-75 disabled:opacity-40"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingTaskId(null)}
+                      className="text-ink-400 hover:text-ink-700 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  {updateTask.error && (
+                    <p className="text-koha-red font-display" style={{ fontSize: 11 }}>
+                      {(updateTask.error as { message?: string })?.message ?? 'Failed to update task'}
+                    </p>
+                  )}
                 </form>
               ) : (
                 <>
