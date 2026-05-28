@@ -52,28 +52,16 @@ export async function createTimeEntry(
   return serializeTimeEntry(entry)
 }
 
-export async function updateTimeEntry(
-  callerId: string,
-  callerRole: string,
-  id: string,
-  data: UpdateTimeEntryBody,
-) {
-  const entry = await timeEntriesRepo.findById(db, id)
-  if (!entry) throw new NotFoundError('Time entry not found')
+type DbTimeEntry = NonNullable<Awaited<ReturnType<typeof timeEntriesRepo.findById>>>
 
-  if (callerRole !== 'manager') {
-    if (entry.userId !== callerId) throw new ForbiddenError("Cannot edit another user's entry")
-    if (!['draft', 'rejected'].includes(entry.status)) {
-      throw new ForbiddenError(`Cannot edit an entry with status '${entry.status}'`)
-    }
+async function editAsEmployee(callerId: string, entry: DbTimeEntry, data: UpdateTimeEntryBody) {
+  if (entry.userId !== callerId) throw new ForbiddenError("Cannot edit another user's entry")
+  if (!['draft', 'rejected'].includes(entry.status)) {
+    throw new ForbiddenError(`Cannot edit an entry with status '${entry.status}'`)
   }
 
-  const newHours = data.hours ?? parseFloat(entry.hours)
-  const newDate = data.entryDate ?? entry.entryDate
-  const newProjectId = data.projectId ?? entry.projectId
-
-  if (callerRole !== 'manager' && data.projectId && data.projectId !== entry.projectId) {
-    const assignment = await userProjectsRepo.findOne(db, entry.userId, newProjectId)
+  if (data.projectId && data.projectId !== entry.projectId) {
+    const assignment = await userProjectsRepo.findOne(db, entry.userId, data.projectId)
     if (!assignment) throw new ForbiddenError('You are not assigned to this project')
   }
 
@@ -83,7 +71,42 @@ export async function updateTimeEntry(
   }
 
   if (data.hours !== undefined || data.entryDate !== undefined) {
-    await checkDailyCap(db, entry.userId, newDate, newHours, id)
+    await checkDailyCap(
+      db,
+      entry.userId,
+      data.entryDate ?? entry.entryDate,
+      data.hours ?? parseFloat(entry.hours),
+      entry.id,
+    )
+  }
+
+  const updated = await timeEntriesRepo.update(db, entry.id, {
+    ...(data.projectId !== undefined && { projectId: data.projectId }),
+    ...(data.taskId !== undefined && { taskId: data.taskId }),
+    ...(data.entryDate !== undefined && { entryDate: data.entryDate }),
+    ...(data.hours !== undefined && { hours: String(data.hours) }),
+    ...(data.notes !== undefined && { notes: data.notes }),
+    // Rejected entry transitions back to draft on any employee edit
+    ...(entry.status === 'rejected' && { status: 'draft' as const }),
+  })
+  if (!updated) throw new NotFoundError('Time entry not found')
+  return serializeTimeEntry(updated)
+}
+
+async function editAsManager(callerId: string, entry: DbTimeEntry, data: UpdateTimeEntryBody) {
+  if (data.entryDate) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (data.entryDate > today) throw new ValidationError('Entry date cannot be in the future')
+  }
+
+  if (data.hours !== undefined || data.entryDate !== undefined) {
+    await checkDailyCap(
+      db,
+      entry.userId,
+      data.entryDate ?? entry.entryDate,
+      data.hours ?? parseFloat(entry.hours),
+      entry.id,
+    )
   }
 
   const baseFields = {
@@ -94,12 +117,11 @@ export async function updateTimeEntry(
     ...(data.notes !== undefined && { notes: data.notes }),
   }
 
-  // Manager editing an approved entry → transition to amended (populate amendment metadata)
-  if (callerRole === 'manager' && entry.status === 'approved') {
+  if (entry.status === 'approved') {
     const sm = canTransition('approved', 'amended', 'manager')
     if (!sm.ok) throw new ForbiddenError(sm.reason)
 
-    const updated = await timeEntriesRepo.transitionStatus(db, id, 'approved', 'amended', {
+    const updated = await timeEntriesRepo.transitionStatus(db, entry.id, 'approved', 'amended', {
       ...baseFields,
       amendedAt: new Date(),
       amendedBy: callerId,
@@ -110,27 +132,34 @@ export async function updateTimeEntry(
     return serializeTimeEntry(updated)
   }
 
-  // Manager editing an already-amended entry → status stays amended, refresh amendment metadata
-  if (callerRole === 'manager' && entry.status === 'amended') {
-    const updated = await timeEntriesRepo.update(db, id, {
+  if (entry.status === 'amended') {
+    const updated = await timeEntriesRepo.update(db, entry.id, {
       ...baseFields,
       amendedAt: new Date(),
       amendedBy: callerId,
-      // originalHours is preserved (S4: populate once)
+      // originalHours preserved (populate-once rule)
     })
     if (!updated) throw new NotFoundError('Time entry not found')
     return serializeTimeEntry(updated)
   }
 
-  const patch = {
-    ...baseFields,
-    // Employee editing a rejected entry: status transitions to draft on save
-    ...(callerRole !== 'manager' && entry.status === 'rejected' && { status: 'draft' as const }),
-  }
-
-  const updated = await timeEntriesRepo.update(db, id, patch)
+  const updated = await timeEntriesRepo.update(db, entry.id, baseFields)
   if (!updated) throw new NotFoundError('Time entry not found')
   return serializeTimeEntry(updated)
+}
+
+export async function updateTimeEntry(
+  callerId: string,
+  callerRole: string,
+  id: string,
+  data: UpdateTimeEntryBody,
+) {
+  const entry = await timeEntriesRepo.findById(db, id)
+  if (!entry) throw new NotFoundError('Time entry not found')
+
+  return callerRole === 'manager'
+    ? editAsManager(callerId, entry, data)
+    : editAsEmployee(callerId, entry, data)
 }
 
 export async function submitEntry(callerId: string, callerRole: string, id: string) {
