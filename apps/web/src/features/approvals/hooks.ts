@@ -1,3 +1,4 @@
+import { invalidateTimeEntry } from '@/shared/cache'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ApprovalQueueParams } from './api'
 import { approvalsApi } from './api'
@@ -18,11 +19,7 @@ export function useApproveEntry() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => approvalsApi.approve(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: approvalKeys.all })
-      // also invalidate time-entries so the employee's view refreshes
-      qc.invalidateQueries({ queryKey: ['time-entries'] })
-    },
+    onSuccess: () => invalidateTimeEntry(qc),
   })
 }
 
@@ -31,9 +28,6 @@ export function useRejectEntry() {
   return useMutation({
     mutationFn: ({ id, note }: { id: string; note: string }) =>
       approvalsApi.reject(id, { note }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: approvalKeys.all })
-      qc.invalidateQueries({ queryKey: ['time-entries'] })
-    },
+    onSuccess: () => invalidateTimeEntry(qc),
   })
 }

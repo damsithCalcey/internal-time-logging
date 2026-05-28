@@ -1,6 +1,7 @@
 import { timeEntriesApi } from '@/features/time-entries/api'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidateTimeEntry } from '@/shared/cache'
 import type { UpdateTimeEntryBody } from '@repo/shared-types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { dailyLogApi } from './api'
 
 export const dailyLogKeys = {
@@ -17,36 +18,27 @@ export function useDailyLog(date: string, userId?: string) {
   })
 }
 
-function useInvalidateAll() {
-  const qc = useQueryClient()
-  return () => {
-    qc.invalidateQueries({ queryKey: ['time-entries'] })
-    qc.invalidateQueries({ queryKey: dailyLogKeys.all })
-    qc.invalidateQueries({ queryKey: ['weekly-summary'] })
-  }
-}
-
 export function useDailySubmit() {
-  const invalidateAll = useInvalidateAll()
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.submit(id),
-    onSuccess: invalidateAll,
+    onSuccess: () => invalidateTimeEntry(qc),
   })
 }
 
 export function useDailyWithdraw() {
-  const invalidateAll = useInvalidateAll()
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.withdraw(id),
-    onSuccess: invalidateAll,
+    onSuccess: () => invalidateTimeEntry(qc),
   })
 }
 
 export function useDailyUpdateEntry() {
-  const invalidateAll = useInvalidateAll()
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdateTimeEntryBody }) =>
       timeEntriesApi.update(id, body),
-    onSuccess: invalidateAll,
+    onSuccess: () => invalidateTimeEntry(qc),
   })
 }

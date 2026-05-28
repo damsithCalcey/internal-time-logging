@@ -1,3 +1,4 @@
+import { invalidateTimeEntry } from '@/shared/cache'
 import type { CreateTimeEntryBody, UpdateTimeEntryBody } from '@repo/shared-types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { timeEntriesApi } from './api'
@@ -26,7 +27,7 @@ export function useCreateTimeEntry() {
   return useMutation({
     mutationFn: (body: CreateTimeEntryBody) => timeEntriesApi.create(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: entryKeys.all })
+      invalidateTimeEntry(qc)
     },
   })
 }
@@ -37,7 +38,7 @@ export function useUpdateTimeEntry() {
     mutationFn: ({ id, body }: { id: string; body: UpdateTimeEntryBody }) =>
       timeEntriesApi.update(id, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: entryKeys.all })
+      invalidateTimeEntry(qc)
     },
   })
 }
@@ -47,7 +48,7 @@ export function useSubmitEntry() {
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.submit(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: entryKeys.all })
+      invalidateTimeEntry(qc)
     },
   })
 }
@@ -57,7 +58,7 @@ export function useWithdrawEntry() {
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.withdraw(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: entryKeys.all })
+      invalidateTimeEntry(qc)
     },
   })
 }
