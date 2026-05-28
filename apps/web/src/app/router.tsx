@@ -2,6 +2,8 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
 import { ProjectsPage } from '@/features/projects'
+import { TimeEntriesPage } from '@/features/time-entries'
+import { TeamPage } from '@/features/admin-users'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ErrorPage } from './ErrorPage'
 import { AppShell } from './shell/AppShell'
@@ -55,7 +57,7 @@ export const router = createBrowserRouter([
       {
         path: 'entries',
         handle: { title: 'My entries' },
-        element: <Placeholder title="My entries" stage={4} />,
+        element: <TimeEntriesPage />,
       },
 
       // Manager-only routes
@@ -82,7 +84,7 @@ export const router = createBrowserRouter([
         handle: { title: 'Team' },
         element: (
           <RequireRole role="manager">
-            <Placeholder title="Team" stage={4} />
+            <TeamPage />
           </RequireRole>
         ),
       },
