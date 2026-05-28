@@ -158,6 +158,14 @@ Tracks every architectural and design decision made during development. Updated 
 
 ---
 
+### D5-04 · ApprovalsPage component modularity
+
+**Decision:** The ApprovalsPage is broken into four components: `FilterBar.tsx`, `ApprovalCard.tsx`, `ApprovalsList.tsx`, `RejectModal.tsx`. Status filter options extracted to `constants.ts`.
+
+**Why:** Monolithic page components reduce readability and complicate testing. Breaking into feature-scoped components (filter UI, card rendering, list container, modal dialog) follows the established pattern from D6-01/02. Each component owns a distinct responsibility with clear, testable props contracts.
+
+---
+
 ## Stage 0 — Discovery & Monorepo Scaffold
 
 ### D0-01 · B1: ERD drift — `amended_at`, `amended_by`, `original_hours` columns

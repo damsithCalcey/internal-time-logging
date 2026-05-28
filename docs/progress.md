@@ -216,7 +216,8 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 - ✅ `apps/api/src/features/approvals/routes.ts` — `GET /approvals`, `POST /approvals/:id/approve`, `POST /approvals/:id/reject`
 - ✅ `apps/api/src/features/time-entries/service.ts` — amendment logic (`approved → amended` + subsequent `amended` edits)
 - ✅ `apps/api/src/app/server.ts` — approvals routes registered
-- ✅ Frontend: `apps/web/src/features/approvals/` — api.ts, hooks.ts, ApprovalsPage.tsx, index.ts
+- ✅ Frontend: `apps/web/src/features/approvals/` — api.ts, hooks.ts, constants.ts, ApprovalsPage.tsx, components/ with FilterBar, ApprovalCard, ApprovalsList, RejectModal, index.ts
+  - ✅ Refactored into modular components for maintainability (D5-04)
 - ✅ `apps/web/src/app/router.tsx` — `/app/approvals` uses `ApprovalsPage`
 
 ### Gate (requires live Supabase project + running BFF)
@@ -236,6 +237,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 - State machine tests are pure unit tests (no DB, no `it.skip`)
 - Amendment triggered via existing `PATCH /time-entries/:id` — no separate endpoint (D5-03)
 - `findForQueue` join design: D5-02
+- ApprovalsPage refactored to four components for modularity (D5-04)
 
 ---
 
