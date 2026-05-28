@@ -1,10 +1,9 @@
 import { db } from '@/db/client.js'
-import * as timeEntriesRepo from '@/db/repositories/time-entries.js'
-import * as userProjectsRepo from '@/db/repositories/user-projects.js'
+import { timeEntriesRepo, userProjectsRepo } from '@/db/repositories/index.js'
 import { serializeEnrichedEntry, serializeTimeEntry } from '@/db/serializers.js'
 import type { Tx } from '@/db/tx.js'
+import { TimeEntry, type Actor, type FieldPatch, type Plan } from '@/domain/time-entry.js'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors.js'
-import { canTransition } from '@/shared/state-machine.js'
 import type { CreateTimeEntryBody, UpdateTimeEntryBody } from '@repo/shared-types'
 
 async function checkDailyCap(
@@ -20,6 +19,18 @@ async function checkDailyCap(
       `Daily total would exceed 24 hours (current: ${existingHours}h, adding: ${hours}h)`,
     )
   }
+}
+
+// Resolves an entity's Plan into a persisted row.
+// `Plan.ok === false` is a 409 (state-machine violation); a null return from
+// applyPlan means the row's status changed between read and write — also a 409.
+async function persist(id: string, plan: Plan) {
+  if (!plan.ok) throw new ConflictError(plan.reason, 'invalid-transition')
+  const updated = await timeEntriesRepo.applyPlan(db, id, plan.expectedStatus, plan.patch)
+  if (!updated) {
+    throw new ConflictError('Entry status changed; please retry', 'invalid-transition')
+  }
+  return serializeTimeEntry(updated)
 }
 
 export async function createTimeEntry(
@@ -52,100 +63,18 @@ export async function createTimeEntry(
   return serializeTimeEntry(entry)
 }
 
-type DbTimeEntry = NonNullable<Awaited<ReturnType<typeof timeEntriesRepo.findById>>>
-
-async function editAsEmployee(callerId: string, entry: DbTimeEntry, data: UpdateTimeEntryBody) {
-  if (entry.userId !== callerId) throw new ForbiddenError("Cannot edit another user's entry")
-  if (!['draft', 'rejected'].includes(entry.status)) {
-    throw new ForbiddenError(`Cannot edit an entry with status '${entry.status}'`)
-  }
-
-  if (data.projectId && data.projectId !== entry.projectId) {
-    const assignment = await userProjectsRepo.findOne(db, entry.userId, data.projectId)
-    if (!assignment) throw new ForbiddenError('You are not assigned to this project')
-  }
-
-  if (data.entryDate) {
-    const today = new Date().toISOString().slice(0, 10)
-    if (data.entryDate > today) throw new ValidationError('Entry date cannot be in the future')
-  }
-
-  if (data.hours !== undefined || data.entryDate !== undefined) {
-    await checkDailyCap(
-      db,
-      entry.userId,
-      data.entryDate ?? entry.entryDate,
-      data.hours ?? parseFloat(entry.hours),
-      entry.id,
-    )
-  }
-
-  const updated = await timeEntriesRepo.update(db, entry.id, {
-    ...(data.projectId !== undefined && { projectId: data.projectId }),
-    ...(data.taskId !== undefined && { taskId: data.taskId }),
-    ...(data.entryDate !== undefined && { entryDate: data.entryDate }),
-    ...(data.hours !== undefined && { hours: String(data.hours) }),
-    ...(data.notes !== undefined && { notes: data.notes }),
-    // Rejected entry transitions back to draft on any employee edit
-    ...(entry.status === 'rejected' && { status: 'draft' as const }),
-  })
-  if (!updated) throw new NotFoundError('Time entry not found')
-  return serializeTimeEntry(updated)
+function actorOf(callerId: string, callerRole: string): Actor {
+  return { id: callerId, role: callerRole === 'manager' ? 'manager' : 'employee' }
 }
 
-async function editAsManager(callerId: string, entry: DbTimeEntry, data: UpdateTimeEntryBody) {
-  if (data.entryDate) {
-    const today = new Date().toISOString().slice(0, 10)
-    if (data.entryDate > today) throw new ValidationError('Entry date cannot be in the future')
-  }
-
-  if (data.hours !== undefined || data.entryDate !== undefined) {
-    await checkDailyCap(
-      db,
-      entry.userId,
-      data.entryDate ?? entry.entryDate,
-      data.hours ?? parseFloat(entry.hours),
-      entry.id,
-    )
-  }
-
-  const baseFields = {
-    ...(data.projectId !== undefined && { projectId: data.projectId }),
-    ...(data.taskId !== undefined && { taskId: data.taskId }),
-    ...(data.entryDate !== undefined && { entryDate: data.entryDate }),
-    ...(data.hours !== undefined && { hours: String(data.hours) }),
-    ...(data.notes !== undefined && { notes: data.notes }),
-  }
-
-  if (entry.status === 'approved') {
-    const sm = canTransition('approved', 'amended', 'manager')
-    if (!sm.ok) throw new ForbiddenError(sm.reason)
-
-    const updated = await timeEntriesRepo.transitionStatus(db, entry.id, 'approved', 'amended', {
-      ...baseFields,
-      amendedAt: new Date(),
-      amendedBy: callerId,
-      // Populate once: if originalHours is already set keep it, otherwise capture current hours
-      originalHours: entry.originalHours ?? entry.hours,
-    })
-    if (!updated) throw new NotFoundError('Time entry not found')
-    return serializeTimeEntry(updated)
-  }
-
-  if (entry.status === 'amended') {
-    const updated = await timeEntriesRepo.update(db, entry.id, {
-      ...baseFields,
-      amendedAt: new Date(),
-      amendedBy: callerId,
-      // originalHours preserved (populate-once rule)
-    })
-    if (!updated) throw new NotFoundError('Time entry not found')
-    return serializeTimeEntry(updated)
-  }
-
-  const updated = await timeEntriesRepo.update(db, entry.id, baseFields)
-  if (!updated) throw new NotFoundError('Time entry not found')
-  return serializeTimeEntry(updated)
+function fieldPatchOf(data: UpdateTimeEntryBody): FieldPatch {
+  const patch: FieldPatch = {}
+  if (data.projectId !== undefined) patch.projectId = data.projectId
+  if (data.taskId !== undefined) patch.taskId = data.taskId
+  if (data.entryDate !== undefined) patch.entryDate = data.entryDate
+  if (data.hours !== undefined) patch.hours = String(data.hours)
+  if (data.notes !== undefined) patch.notes = data.notes
+  return patch
 }
 
 export async function updateTimeEntry(
@@ -154,49 +83,75 @@ export async function updateTimeEntry(
   id: string,
   data: UpdateTimeEntryBody,
 ) {
-  const entry = await timeEntriesRepo.findById(db, id)
-  if (!entry) throw new NotFoundError('Time entry not found')
+  const row = await timeEntriesRepo.findById(db, id)
+  if (!row) throw new NotFoundError('Time entry not found')
+  const entry = TimeEntry.from(row)
+  const actor = actorOf(callerId, callerRole)
 
-  return callerRole === 'manager'
-    ? editAsManager(callerId, entry, data)
-    : editAsEmployee(callerId, entry, data)
+  // Cross-row authz + invariants stay in the service: the entity owns within-row semantics.
+  if (actor.role !== 'manager') {
+    if (entry.userId !== callerId) throw new ForbiddenError("Cannot edit another user's entry")
+    if (data.projectId && data.projectId !== row.projectId) {
+      const assignment = await userProjectsRepo.findOne(db, entry.userId, data.projectId)
+      if (!assignment) throw new ForbiddenError('You are not assigned to this project')
+    }
+  }
+
+  if (data.entryDate) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (data.entryDate > today) throw new ValidationError('Entry date cannot be in the future')
+  }
+
+  if (data.hours !== undefined || data.entryDate !== undefined) {
+    await checkDailyCap(
+      db,
+      entry.userId,
+      data.entryDate ?? row.entryDate,
+      data.hours ?? parseFloat(row.hours),
+      entry.id,
+    )
+  }
+
+  const patch = fieldPatchOf(data)
+  const plan = actor.role === 'manager' ? entry.editAsManager(actor, patch) : entry.editAsEmployee(patch)
+  return persist(entry.id, plan)
 }
 
 export async function submitEntry(callerId: string, callerRole: string, id: string) {
-  const entry = await timeEntriesRepo.findById(db, id)
-  if (!entry) throw new NotFoundError('Time entry not found')
+  const row = await timeEntriesRepo.findById(db, id)
+  if (!row) throw new NotFoundError('Time entry not found')
 
-  if (callerRole !== 'manager' && entry.userId !== callerId) {
+  if (callerRole !== 'manager' && row.userId !== callerId) {
     throw new ForbiddenError("Cannot submit another user's entry")
   }
 
-  const updated = await timeEntriesRepo.transitionStatus(db, id, 'draft', 'submitted')
-  if (!updated) {
+  const entry = TimeEntry.from(row)
+  const plan = entry.submit()
+  // Map a state-machine failure here to the existing "invalid transition" 409 with the row's status in the message,
+  // matching the prior service error string for callers/tests that depend on it.
+  if (!plan.ok) {
     throw new ConflictError(
-      `Entry cannot be submitted (current status: '${entry.status}')`,
+      `Entry cannot be submitted (current status: '${row.status}')`,
       'invalid-transition',
     )
   }
-  return serializeTimeEntry(updated)
+  return persist(entry.id, plan)
 }
 
 export async function withdrawEntry(callerId: string, callerRole: string, id: string) {
-  const entry = await timeEntriesRepo.findById(db, id)
-  if (!entry) throw new NotFoundError('Time entry not found')
+  const row = await timeEntriesRepo.findById(db, id)
+  if (!row) throw new NotFoundError('Time entry not found')
 
-  if (callerRole !== 'manager' && entry.userId !== callerId) {
+  if (callerRole !== 'manager' && row.userId !== callerId) {
     throw new ForbiddenError("Cannot withdraw another user's entry")
   }
 
-  // Race-safe: only succeeds if current status is 'submitted'
-  const updated = await timeEntriesRepo.transitionStatus(db, id, 'submitted', 'draft')
-  if (!updated) {
-    throw new ConflictError(
-      'Entry cannot be withdrawn (already actioned)',
-      'entry-already-actioned',
-    )
+  const entry = TimeEntry.from(row)
+  const plan = entry.withdraw()
+  if (!plan.ok) {
+    throw new ConflictError('Entry cannot be withdrawn (already actioned)', 'entry-already-actioned')
   }
-  return serializeTimeEntry(updated)
+  return persist(entry.id, plan)
 }
 
 export async function getEntry(callerId: string, callerRole: string, id: string) {

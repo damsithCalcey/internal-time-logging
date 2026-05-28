@@ -1,9 +1,18 @@
 import { db } from '@/db/client.js'
-import * as timeEntriesRepo from '@/db/repositories/time-entries.js'
+import { timeEntriesRepo } from '@/db/repositories/index.js'
 import { serializeEnrichedEntry, serializeTimeEntry } from '@/db/serializers.js'
+import { TimeEntry, type Actor, type Plan } from '@/domain/time-entry.js'
 import { ConflictError, NotFoundError } from '@/shared/errors.js'
 import type { TimeEntryStatus } from '@repo/shared-types'
-import { canTransition } from '@/shared/state-machine.js'
+
+async function persist(id: string, plan: Plan) {
+  if (!plan.ok) throw new ConflictError(plan.reason, 'invalid-transition')
+  const updated = await timeEntriesRepo.applyPlan(db, id, plan.expectedStatus, plan.patch)
+  if (!updated) {
+    throw new ConflictError('Entry status changed; please retry', 'invalid-transition')
+  }
+  return serializeTimeEntry(updated)
+}
 
 export async function getQueue(filters: {
   status?: TimeEntryStatus
@@ -16,32 +25,17 @@ export async function getQueue(filters: {
 }
 
 export async function approveEntry(managerId: string, id: string) {
-  const entry = await timeEntriesRepo.findById(db, id)
-  if (!entry) throw new NotFoundError('Time entry not found')
+  const row = await timeEntriesRepo.findById(db, id)
+  if (!row) throw new NotFoundError('Time entry not found')
 
-  const sm = canTransition(entry.status, 'approved', 'manager')
-  if (!sm.ok) throw new ConflictError(sm.reason, 'invalid-transition')
-
-  const updated = await timeEntriesRepo.transitionStatus(db, id, 'submitted', 'approved')
-  if (!updated)
-    throw new ConflictError('Entry cannot be approved (status changed)', 'invalid-transition')
-  return serializeTimeEntry(updated)
+  const actor: Actor = { id: managerId, role: 'manager' }
+  return persist(id, TimeEntry.from(row).approve(actor))
 }
 
 export async function rejectEntry(managerId: string, id: string, note: string) {
-  const entry = await timeEntriesRepo.findById(db, id)
-  if (!entry) throw new NotFoundError('Time entry not found')
+  const row = await timeEntriesRepo.findById(db, id)
+  if (!row) throw new NotFoundError('Time entry not found')
 
-  const sm = canTransition(entry.status, 'rejected', 'manager')
-  if (!sm.ok) throw new ConflictError(sm.reason, 'invalid-transition')
-
-  // Service-layer double-check on note (Zod already caught empty/whitespace at route level)
-  if (!note.trim()) throw new ConflictError('Rejection note is required', 'invalid-transition')
-
-  const updated = await timeEntriesRepo.transitionStatus(db, id, 'submitted', 'rejected', {
-    managerNote: note.trim(),
-  })
-  if (!updated)
-    throw new ConflictError('Entry cannot be rejected (status changed)', 'invalid-transition')
-  return serializeTimeEntry(updated)
+  const actor: Actor = { id: managerId, role: 'manager' }
+  return persist(id, TimeEntry.from(row).reject(actor, note))
 }
