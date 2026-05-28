@@ -1,22 +1,11 @@
 import { db } from '@/db/client.js'
 import * as timeEntriesRepo from '@/db/repositories/time-entries.js'
 import * as userProjectsRepo from '@/db/repositories/user-projects.js'
-import type { TimeEntry } from '@/db/schema.js'
+import { serializeEnrichedEntry, serializeTimeEntry } from '@/db/serializers.js'
 import type { Tx } from '@/db/tx.js'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors.js'
 import { canTransition } from '@/shared/state-machine.js'
 import type { CreateTimeEntryBody, UpdateTimeEntryBody } from '@repo/shared-types'
-
-function serializeEntry(entry: TimeEntry) {
-  return {
-    ...entry,
-    hours: parseFloat(entry.hours),
-    originalHours: entry.originalHours != null ? parseFloat(entry.originalHours) : null,
-    createdAt: entry.createdAt.toISOString(),
-    updatedAt: entry.updatedAt.toISOString(),
-    amendedAt: entry.amendedAt?.toISOString() ?? null,
-  }
-}
 
 async function checkDailyCap(
   d: typeof db | Tx,
@@ -60,7 +49,7 @@ export async function createTimeEntry(
     hours: String(data.hours),
     notes: data.notes ?? null,
   })
-  return serializeEntry(entry)
+  return serializeTimeEntry(entry)
 }
 
 export async function updateTimeEntry(
@@ -118,7 +107,7 @@ export async function updateTimeEntry(
       originalHours: entry.originalHours ?? entry.hours,
     })
     if (!updated) throw new NotFoundError('Time entry not found')
-    return serializeEntry(updated)
+    return serializeTimeEntry(updated)
   }
 
   // Manager editing an already-amended entry → status stays amended, refresh amendment metadata
@@ -130,7 +119,7 @@ export async function updateTimeEntry(
       // originalHours is preserved (S4: populate once)
     })
     if (!updated) throw new NotFoundError('Time entry not found')
-    return serializeEntry(updated)
+    return serializeTimeEntry(updated)
   }
 
   const patch = {
@@ -141,7 +130,7 @@ export async function updateTimeEntry(
 
   const updated = await timeEntriesRepo.update(db, id, patch)
   if (!updated) throw new NotFoundError('Time entry not found')
-  return serializeEntry(updated)
+  return serializeTimeEntry(updated)
 }
 
 export async function submitEntry(callerId: string, callerRole: string, id: string) {
@@ -159,7 +148,7 @@ export async function submitEntry(callerId: string, callerRole: string, id: stri
       'invalid-transition',
     )
   }
-  return serializeEntry(updated)
+  return serializeTimeEntry(updated)
 }
 
 export async function withdrawEntry(callerId: string, callerRole: string, id: string) {
@@ -178,7 +167,7 @@ export async function withdrawEntry(callerId: string, callerRole: string, id: st
       'entry-already-actioned',
     )
   }
-  return serializeEntry(updated)
+  return serializeTimeEntry(updated)
 }
 
 export async function getEntry(callerId: string, callerRole: string, id: string) {
@@ -187,7 +176,7 @@ export async function getEntry(callerId: string, callerRole: string, id: string)
   if (callerRole !== 'manager' && entry.userId !== callerId) {
     throw new NotFoundError('Time entry not found')
   }
-  return serializeEntry(entry)
+  return serializeTimeEntry(entry)
 }
 
 export async function listForUser(
@@ -200,20 +189,7 @@ export async function listForUser(
   const entries = date
     ? await timeEntriesRepo.findByUserAndDate(db, targetId, date)
     : await timeEntriesRepo.findByUser(db, targetId)
-  return entries.map(serializeEntry)
-}
-
-function serializeLogEntry(
-  entry: Awaited<ReturnType<typeof timeEntriesRepo.findEnrichedForLog>>[number],
-) {
-  return {
-    ...entry,
-    hours: parseFloat(entry.hours),
-    originalHours: entry.originalHours != null ? parseFloat(entry.originalHours) : null,
-    createdAt: entry.createdAt.toISOString(),
-    updatedAt: entry.updatedAt.toISOString(),
-    amendedAt: entry.amendedAt?.toISOString() ?? null,
-  }
+  return entries.map(serializeTimeEntry)
 }
 
 function parseIsoWeek(week: string): { from: string; to: string } {
@@ -257,7 +233,7 @@ export async function getDailyEntries(
 
   const filters = targetUserId ? { date, userId: targetUserId } : { date }
   const entries = await timeEntriesRepo.findEnrichedForLog(db, filters)
-  return entries.map(serializeLogEntry)
+  return entries.map(serializeEnrichedEntry)
 }
 
 export async function getWeeklyEntries(
@@ -275,7 +251,7 @@ export async function getWeeklyEntries(
 
   const filters = targetUserId ? { from, to, userId: targetUserId } : { from, to }
   const entries = await timeEntriesRepo.findEnrichedForLog(db, filters)
-  return entries.map(serializeLogEntry)
+  return entries.map(serializeEnrichedEntry)
 }
 
 // Called by admin-users/service via the acyclic service graph (§1.3)
