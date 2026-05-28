@@ -170,7 +170,7 @@ function EntryCard({
 export function TimeEntriesPage() {
   const { user } = useAuth()
   const isManager = user?.role === 'manager'
-  const today = new Date().toISOString().slice(0, 10)
+  const today = format(new Date(), 'yyyy-MM-dd')
 
   const [selectedDate, setSelectedDate] = useState(today)
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
@@ -281,7 +281,7 @@ export function TimeEntriesPage() {
   const navigateDate = (delta: number) => {
     const d = new Date(`${selectedDate}T00:00:00`)
     d.setDate(d.getDate() + delta)
-    const next = d.toISOString().slice(0, 10)
+    const next = format(d, 'yyyy-MM-dd')
     if (next <= today) setSelectedDate(next)
   }
 
