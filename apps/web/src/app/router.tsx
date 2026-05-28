@@ -2,28 +2,14 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
 import { ApprovalsPage } from '@/features/approvals'
+import { DailyLogPage } from '@/features/daily-log'
 import { ProjectsPage } from '@/features/projects'
 import { TimeEntriesPage } from '@/features/time-entries'
 import { TeamPage } from '@/features/admin-users'
+import { WeeklySummaryPage } from '@/features/weekly-summary'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ErrorPage } from './ErrorPage'
 import { AppShell } from './shell/AppShell'
-
-function Placeholder({ title, stage }: { title: string; stage: number }) {
-  return (
-    <div className="flex flex-col gap-2 py-8">
-      <h2
-        className="font-display text-ink-1000 font-bold"
-        style={{ fontSize: 24, letterSpacing: '-0.01em' }}
-      >
-        {title}
-      </h2>
-      <p className="text-ink-500" style={{ fontSize: 14 }}>
-        Coming in Stage {stage}. The app shell, auth, and navigation are working.
-      </p>
-    </div>
-  )
-}
 
 export const router = createBrowserRouter([
   // Root → app
@@ -48,12 +34,12 @@ export const router = createBrowserRouter([
       {
         path: 'daily',
         handle: { title: 'Daily log' },
-        element: <Placeholder title="Daily log" stage={6} />,
+        element: <DailyLogPage />,
       },
       {
         path: 'weekly',
         handle: { title: 'Weekly summary' },
-        element: <Placeholder title="Weekly summary" stage={6} />,
+        element: <WeeklySummaryPage />,
       },
       {
         path: 'entries',

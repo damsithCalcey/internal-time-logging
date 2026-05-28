@@ -247,8 +247,20 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 - ✅ `apps/api/src/db/repositories/time-entries.ts` — `findEnrichedForLog` (joined query, date or date-range + optional userId filter)
 - ✅ `apps/api/src/features/time-entries/service.ts` — `getDailyEntries`, `getWeeklyEntries`, `parseIsoWeek` helper, `serializeLogEntry`
 - ✅ `apps/api/src/features/time-entries/routes.ts` — `GET /time-entries/daily`, `GET /time-entries/weekly` (registered before `/:id`)
-- ⬜ Frontend: `apps/web/src/features/daily-log/` — daily log page
-- ⬜ Frontend: `apps/web/src/features/weekly-summary/` — weekly summary page
+- ✅ Frontend: `apps/web/src/features/daily-log/` — api.ts, hooks.ts, DailyLogPage.tsx, index.ts
+  - Table layout with Project/Task, Notes, Hours, Status, Actions columns
+  - Date navigator (prev/next/Today), manager user filter dropdown
+  - Inline Submit/Withdraw actions; Edit opens a quick-edit modal (project/task/date/hours/notes)
+  - "Log entry" CTA navigates to `/app/entries`; horizontally scrollable on mobile
+  - Mutations invalidate `['time-entries']`, `['daily-log']`, and `['weekly-summary']` caches
+- ✅ Frontend: `apps/web/src/features/weekly-summary/` — api.ts, hooks.ts, WeeklySummaryPage.tsx, index.ts
+  - ISO week navigator (prev/next/This week); week header shows date range
+  - Group-by toggle: By project | By task
+  - Pivot table: group name + 7 day columns (Mon–Sun) + Total; grand-total footer row
+  - Manager user filter; horizontally scrollable table on mobile
+  - Client-side pivot via `buildPivot()` — no server-side aggregation needed
+- ✅ `apps/web/src/app/router.tsx` — `/app/daily` → `DailyLogPage`, `/app/weekly` → `WeeklySummaryPage`; `Placeholder` component removed
+- ✅ Frontend typecheck passes
 
 ### Gate (requires live Supabase project + running BFF)
 
