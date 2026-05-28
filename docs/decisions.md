@@ -132,6 +132,32 @@ Tracks every architectural and design decision made during development. Updated 
 
 ---
 
+## Stage 5 — Approvals Slice & Amended State
+
+### D5-01 · Pure state machine in `shared/state-machine.ts`
+
+**Decision:** `canTransition(current, next, role)` is a pure function with no imports of repositories or side-effects. Any DB context needed before a transition is fetched by the *calling service* and passed in.
+
+**Why:** Keeps `shared/` a clean utility layer with no circular dependencies. The function is trivially unit-testable without a DB — the test file (`state-machine.test.ts`) covers the full positive and negative transition matrix with pure in-memory tests (no `it.skip` guards needed).
+
+---
+
+### D5-02 · `findForQueue` join lives in the time-entries repository
+
+**Decision:** A specialised `findForQueue` function is added to `apps/api/src/db/repositories/time-entries.ts`. It joins `time_entries` with `users`, `projects`, `tasks`, and an aliased `users` (for `amendedByName`) using Drizzle's `alias` from `drizzle-orm/pg-core`.
+
+**Why:** The approvals service is declared in the acyclic dependency graph as "uses timeEntriesRepo directly." Putting the enriched read query in the repo keeps the service thin. The one-table-per-repo guideline is a heuristic; a join for a read-side view is a well-established exception and is already used in `projects.ts` (joins tasks + user_projects for counts).
+
+---
+
+### D5-03 · Amendment metadata set in `time-entries/service.ts`, not `approvals/service.ts`
+
+**Decision:** The `approved → amended` side-effect (setting `amendedAt`, `amendedBy`, `originalHours`) is triggered inside `updateTimeEntry` in `time-entries/service.ts` when a manager PATCHes an `approved` entry. It is not a separate endpoint.
+
+**Why:** The existing `PATCH /time-entries/:id` endpoint already handles manager edits. Adding a new endpoint for amendment would duplicate the update logic. The service detects the `approved` status and uses `transitionStatus` for the atomic `approved → amended` flip with the amendment metadata in a single DB call.
+
+---
+
 ## Stage 0 — Discovery & Monorepo Scaffold
 
 ### D0-01 · B1: ERD drift — `amended_at`, `amended_by`, `original_hours` columns

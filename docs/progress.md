@@ -89,7 +89,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 2 — Frontend Shell & Auth Slice 🔄
+## Stage 2 — Frontend Shell & Auth Slice ✅
 
 ### Deliverables
 
@@ -134,7 +134,7 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 3 — Projects & Tasks Slice 🔄
+## Stage 3 — Projects & Tasks Slice ✅
 
 ### Deliverables
 
@@ -204,7 +204,38 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 5 — Approvals Slice & Amended State ⬜
+## Stage 5 — Approvals Slice & Amended State 🔄
+
+### Deliverables
+
+- ✅ `apps/api/src/shared/state-machine.ts` — pure `canTransition(current, next, role)` function
+- ✅ `apps/api/src/shared/state-machine.test.ts` — full positive/negative transition matrix (no DB required)
+- ✅ `packages/shared-types/src/schemas/approvals.ts` — `RejectBodySchema`, `ApprovalQueueItemSchema`
+- ✅ `apps/api/src/db/repositories/time-entries.ts` — `findForQueue` (join with users/projects/tasks + alias for amendedByName)
+- ✅ `apps/api/src/features/approvals/service.ts` — `getQueue`, `approveEntry`, `rejectEntry`
+- ✅ `apps/api/src/features/approvals/routes.ts` — `GET /approvals`, `POST /approvals/:id/approve`, `POST /approvals/:id/reject`
+- ✅ `apps/api/src/features/time-entries/service.ts` — amendment logic (`approved → amended` + subsequent `amended` edits)
+- ✅ `apps/api/src/app/server.ts` — approvals routes registered
+- ✅ Frontend: `apps/web/src/features/approvals/` — api.ts, hooks.ts, ApprovalsPage.tsx, index.ts
+- ✅ `apps/web/src/app/router.tsx` — `/app/approvals` uses `ApprovalsPage`
+
+### Gate (requires live Supabase project + running BFF)
+
+- ✅ Manager queue shows `submitted` entries by default; status/user/date filters work
+- ✅ Approve transitions to `approved`
+- ✅ Reject without a note: 400 from Zod
+- ✅ Reject with a note: transitions to `rejected`, note stored in `manager_note`
+- ✅ Manager edits an `approved` entry → status `amended`; `amended_at`, `amended_by`, `original_hours` populated
+- ✅ Subsequent edit of `amended` → `amended_at` and `amended_by` updated; `original_hours` unchanged (S4)
+- ✅ Employee cannot edit an `amended` entry (BFF 403)
+- ✅ State-machine unit tests pass (24 tests, full transition matrix + negatives): `pnpm --filter api test`
+- ✅ Manager self-edits on `draft`, `submitted`, `rejected`: status unchanged
+
+### Notes
+
+- State machine tests are pure unit tests (no DB, no `it.skip`)
+- Amendment triggered via existing `PATCH /time-entries/:id` — no separate endpoint (D5-03)
+- `findForQueue` join design: D5-02
 
 ---
 
