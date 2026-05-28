@@ -1,16 +1,17 @@
-import { Hono } from 'hono'
-import { cors } from 'hono/cors'
-import { logger as honoLogger } from 'hono/logger'
-import type { HealthResponse } from '@repo/shared-types'
-import { authMiddleware, type AppEnv } from '@/shared/auth.js'
-import { HttpError } from '@/shared/errors.js'
-import { logger } from '@/shared/logger.js'
+import adminUsersRoutes from '@/features/admin-users/routes.js'
+import approvalsRoutes from '@/features/approvals/routes.js'
 import authRoutes from '@/features/auth/routes.js'
 import projectRoutes from '@/features/projects/routes.js'
 import taskRoutes from '@/features/tasks/routes.js'
-import userRoutes from '@/features/users/routes.js'
 import timeEntriesRoutes from '@/features/time-entries/routes.js'
-import adminUsersRoutes from '@/features/admin-users/routes.js'
+import userRoutes from '@/features/users/routes.js'
+import { authMiddleware, type AppEnv } from '@/shared/auth.js'
+import { HttpError } from '@/shared/errors.js'
+import { logger } from '@/shared/logger.js'
+import type { HealthResponse } from '@repo/shared-types'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { logger as honoLogger } from 'hono/logger'
 
 export const app = new Hono()
 
@@ -34,6 +35,7 @@ api.route('/', taskRoutes)
 api.route('/', userRoutes)
 api.route('/', timeEntriesRoutes)
 api.route('/', adminUsersRoutes)
+api.route('/', approvalsRoutes)
 
 app.route('/', api)
 

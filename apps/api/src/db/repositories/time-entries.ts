@@ -1,6 +1,14 @@
-import { and, eq, ne, sql, sum } from 'drizzle-orm'
+import { and, eq, gte, lte, ne, sql, sum } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import type { db } from '../client.js'
-import { timeEntries, type NewTimeEntry, type TimeEntry } from '../schema.js'
+import {
+  projects,
+  tasks,
+  timeEntries,
+  users,
+  type NewTimeEntry,
+  type TimeEntry,
+} from '../schema.js'
 import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db
@@ -116,3 +124,52 @@ export const countForDateExcluding = (
       ),
     )
     .then((r) => r[0]?.count ?? 0)
+
+// Enriched queue view: time entry joined with user/project/task names for the approval queue
+export const findForQueue = (
+  d: DB,
+  filters: {
+    status?: TimeEntry['status']
+    userId?: string
+    from?: string
+    to?: string
+  },
+) => {
+  const amendedByUser = alias(users, 'amended_by_user')
+
+  return d
+    .select({
+      id: timeEntries.id,
+      userId: timeEntries.userId,
+      projectId: timeEntries.projectId,
+      taskId: timeEntries.taskId,
+      entryDate: timeEntries.entryDate,
+      hours: timeEntries.hours,
+      notes: timeEntries.notes,
+      status: timeEntries.status,
+      managerNote: timeEntries.managerNote,
+      amendedAt: timeEntries.amendedAt,
+      amendedBy: timeEntries.amendedBy,
+      originalHours: timeEntries.originalHours,
+      createdAt: timeEntries.createdAt,
+      updatedAt: timeEntries.updatedAt,
+      userName: users.fullName,
+      projectName: projects.name,
+      taskName: tasks.name,
+      amendedByName: amendedByUser.fullName,
+    })
+    .from(timeEntries)
+    .innerJoin(users, eq(timeEntries.userId, users.id))
+    .innerJoin(projects, eq(timeEntries.projectId, projects.id))
+    .innerJoin(tasks, eq(timeEntries.taskId, tasks.id))
+    .leftJoin(amendedByUser, eq(timeEntries.amendedBy, amendedByUser.id))
+    .where(
+      and(
+        eq(timeEntries.status, filters.status ?? 'submitted'),
+        filters.userId ? eq(timeEntries.userId, filters.userId) : undefined,
+        filters.from ? gte(timeEntries.entryDate, filters.from) : undefined,
+        filters.to ? lte(timeEntries.entryDate, filters.to) : undefined,
+      ),
+    )
+    .orderBy(timeEntries.entryDate)
+}

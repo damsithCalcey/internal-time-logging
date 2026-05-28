@@ -1,10 +1,11 @@
 import { db } from '@/db/client.js'
 import * as timeEntriesRepo from '@/db/repositories/time-entries.js'
 import * as userProjectsRepo from '@/db/repositories/user-projects.js'
+import type { TimeEntry } from '@/db/schema.js'
 import type { Tx } from '@/db/tx.js'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors.js'
+import { canTransition } from '@/shared/state-machine.js'
 import type { CreateTimeEntryBody, UpdateTimeEntryBody } from '@repo/shared-types'
-import type { TimeEntry } from '@/db/schema.js'
 
 function serializeEntry(entry: TimeEntry) {
   return {
@@ -96,12 +97,44 @@ export async function updateTimeEntry(
     await checkDailyCap(db, entry.userId, newDate, newHours, id)
   }
 
-  const patch: Parameters<typeof timeEntriesRepo.update>[2] = {
+  const baseFields = {
     ...(data.projectId !== undefined && { projectId: data.projectId }),
     ...(data.taskId !== undefined && { taskId: data.taskId }),
     ...(data.entryDate !== undefined && { entryDate: data.entryDate }),
     ...(data.hours !== undefined && { hours: String(data.hours) }),
     ...(data.notes !== undefined && { notes: data.notes }),
+  }
+
+  // Manager editing an approved entry → transition to amended (populate amendment metadata)
+  if (callerRole === 'manager' && entry.status === 'approved') {
+    const sm = canTransition('approved', 'amended', 'manager')
+    if (!sm.ok) throw new ForbiddenError(sm.reason)
+
+    const updated = await timeEntriesRepo.transitionStatus(db, id, 'approved', 'amended', {
+      ...baseFields,
+      amendedAt: new Date(),
+      amendedBy: callerId,
+      // Populate once: if originalHours is already set keep it, otherwise capture current hours
+      originalHours: entry.originalHours ?? entry.hours,
+    })
+    if (!updated) throw new NotFoundError('Time entry not found')
+    return serializeEntry(updated)
+  }
+
+  // Manager editing an already-amended entry → status stays amended, refresh amendment metadata
+  if (callerRole === 'manager' && entry.status === 'amended') {
+    const updated = await timeEntriesRepo.update(db, id, {
+      ...baseFields,
+      amendedAt: new Date(),
+      amendedBy: callerId,
+      // originalHours is preserved (S4: populate once)
+    })
+    if (!updated) throw new NotFoundError('Time entry not found')
+    return serializeEntry(updated)
+  }
+
+  const patch = {
+    ...baseFields,
     // Employee editing a rejected entry: status transitions to draft on save
     ...(callerRole !== 'manager' && entry.status === 'rejected' && { status: 'draft' as const }),
   }
@@ -140,7 +173,10 @@ export async function withdrawEntry(callerId: string, callerRole: string, id: st
   // Race-safe: only succeeds if current status is 'submitted'
   const updated = await timeEntriesRepo.transitionStatus(db, id, 'submitted', 'draft')
   if (!updated) {
-    throw new ConflictError('Entry cannot be withdrawn (already actioned)', 'entry-already-actioned')
+    throw new ConflictError(
+      'Entry cannot be withdrawn (already actioned)',
+      'entry-already-actioned',
+    )
   }
   return serializeEntry(updated)
 }
