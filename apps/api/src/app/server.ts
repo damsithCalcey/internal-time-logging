@@ -6,6 +6,9 @@ import { authMiddleware, type AppEnv } from '@/shared/auth.js'
 import { HttpError } from '@/shared/errors.js'
 import { logger } from '@/shared/logger.js'
 import authRoutes from '@/features/auth/routes.js'
+import projectRoutes from '@/features/projects/routes.js'
+import taskRoutes from '@/features/tasks/routes.js'
+import userRoutes from '@/features/users/routes.js'
 
 export const app = new Hono()
 
@@ -24,6 +27,9 @@ app.get('/health', (c) => c.json<HealthResponse>({ ok: true }))
 const api = new Hono<AppEnv>()
 api.use('*', authMiddleware)
 api.route('/', authRoutes)
+api.route('/', projectRoutes)
+api.route('/', taskRoutes)
+api.route('/', userRoutes)
 
 app.route('/', api)
 
