@@ -2,10 +2,8 @@ import { db } from '@/db/client.js'
 import * as projectsRepo from '@/db/repositories/projects.js'
 import * as tasksRepo from '@/db/repositories/tasks.js'
 import * as userProjectsRepo from '@/db/repositories/user-projects.js'
-import { projects, tasks, userProjects, users } from '@/db/schema.js'
 import { ConflictError, NotFoundError } from '@/shared/errors.js'
 import type { CreateProjectBody, UpdateProjectBody } from '@repo/shared-types'
-import { countDistinct, eq, sql } from 'drizzle-orm'
 
 export async function createProject(callerId: string, data: CreateProjectBody) {
   const existing = await projectsRepo.findByNameCaseInsensitive(db, data.name)
@@ -19,28 +17,7 @@ export async function createProject(callerId: string, data: CreateProjectBody) {
 }
 
 export async function listProjects() {
-  const rows = await db
-    .select({
-      id: projects.id,
-      name: projects.name,
-      description: projects.description,
-      createdAt: projects.createdAt,
-      updatedAt: projects.updatedAt,
-      taskCount: countDistinct(tasks.id),
-      memberCount: countDistinct(userProjects.userId),
-    })
-    .from(projects)
-    .leftJoin(tasks, eq(tasks.projectId, projects.id))
-    .leftJoin(userProjects, eq(userProjects.projectId, projects.id))
-    .groupBy(
-      projects.id,
-      projects.name,
-      projects.description,
-      projects.createdAt,
-      projects.updatedAt,
-    )
-    .orderBy(sql`lower(${projects.name})`)
-
+  const rows = await projectsRepo.listWithCounts(db)
   return rows.map((r) => ({
     ...r,
     taskCount: Number(r.taskCount),
@@ -56,18 +33,7 @@ export async function getProjectDetail(id: string) {
 
   const [allTasks, memberRows] = await Promise.all([
     tasksRepo.findByProject(db, id),
-    db
-      .select({
-        userId: userProjects.userId,
-        fullName: users.fullName,
-        email: users.email,
-        role: users.role,
-        assignedAt: userProjects.assignedAt,
-      })
-      .from(userProjects)
-      .innerJoin(users, eq(users.id, userProjects.userId))
-      .where(eq(userProjects.projectId, id))
-      .orderBy(users.fullName),
+    userProjectsRepo.findByProjectWithUsers(db, id),
   ])
 
   return {
@@ -136,17 +102,7 @@ export async function listProjectsForTimeEntry(
 ) {
   const targetUserId = callerRole === 'manager' && forUserId ? forUserId : callerId
 
-  const rows = await db
-    .select({
-      id: projects.id,
-      name: projects.name,
-      taskId: tasks.id,
-      taskName: tasks.name,
-    })
-    .from(projects)
-    .innerJoin(tasks, eq(tasks.projectId, projects.id))
-    .where(eq(tasks.isActive, true))
-    .orderBy(sql`lower(${projects.name})`, sql`lower(${tasks.name})`)
+  const rows = await projectsRepo.listForTimeEntry(db)
 
   // For employees, filter to only assigned projects
   let allowedProjectIds: Set<string> | null = null
@@ -168,19 +124,9 @@ export async function listProjectsForTimeEntry(
 
 export async function getStats() {
   const [projectCount, taskCount, memberCount] = await Promise.all([
-    db
-      .select({ count: countDistinct(projects.id) })
-      .from(projects)
-      .then((r) => Number(r[0]?.count ?? 0)),
-    db
-      .select({ count: countDistinct(tasks.id) })
-      .from(tasks)
-      .where(eq(tasks.isActive, true))
-      .then((r) => Number(r[0]?.count ?? 0)),
-    db
-      .select({ count: countDistinct(userProjects.userId) })
-      .from(userProjects)
-      .then((r) => Number(r[0]?.count ?? 0)),
+    projectsRepo.countAll(db),
+    tasksRepo.countActive(db),
+    userProjectsRepo.countDistinctUsers(db),
   ])
   return { projectCount, taskCount, memberCount }
 }

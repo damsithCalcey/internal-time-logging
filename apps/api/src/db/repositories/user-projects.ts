@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm'
+import { and, countDistinct, eq } from 'drizzle-orm'
 import type { db } from '../client.js'
-import { userProjects, type NewUserProject, type UserProject } from '../schema.js'
+import { userProjects, users, type NewUserProject, type UserProject } from '../schema.js'
 import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db
@@ -30,3 +30,23 @@ export const remove = (d: DB, userId: string, projectId: string): Promise<void> 
     .delete(userProjects)
     .where(and(eq(userProjects.userId, userId), eq(userProjects.projectId, projectId)))
     .then(() => undefined)
+
+export const findByProjectWithUsers = (d: DB, projectId: string) =>
+  d
+    .select({
+      userId: userProjects.userId,
+      fullName: users.fullName,
+      email: users.email,
+      role: users.role,
+      assignedAt: userProjects.assignedAt,
+    })
+    .from(userProjects)
+    .innerJoin(users, eq(users.id, userProjects.userId))
+    .where(eq(userProjects.projectId, projectId))
+    .orderBy(users.fullName)
+
+export const countDistinctUsers = (d: DB): Promise<number> =>
+  d
+    .select({ count: countDistinct(userProjects.userId) })
+    .from(userProjects)
+    .then((r) => Number(r[0]?.count ?? 0))

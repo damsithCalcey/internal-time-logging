@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, countDistinct, eq, sql } from 'drizzle-orm'
 import type { db } from '../client.js'
 import { tasks, type NewTask, type Task } from '../schema.js'
 import type { Tx } from '../tx.js'
@@ -50,3 +50,10 @@ export const update = (
     .where(eq(tasks.id, id))
     .returning()
     .then((r) => r[0] ?? null)
+
+export const countActive = (d: DB): Promise<number> =>
+  d
+    .select({ count: countDistinct(tasks.id) })
+    .from(tasks)
+    .where(eq(tasks.isActive, true))
+    .then((r) => Number(r[0]?.count ?? 0))
