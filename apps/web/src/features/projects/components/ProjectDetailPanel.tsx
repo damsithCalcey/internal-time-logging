@@ -18,7 +18,7 @@ import {
   useUpdateProject,
   useUpdateTask,
 } from '../hooks'
-import { initials, projectCode, projectColor } from '../projectUtils'
+import { initials, projectCode, projectColor } from '../utils'
 
 // ── Member chip ───────────────────────────────────────────────────
 

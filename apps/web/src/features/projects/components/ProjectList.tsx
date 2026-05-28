@@ -1,6 +1,6 @@
 import type { ProjectListItem } from '@repo/shared-types'
 import { ChevronRight, Folder, Plus } from 'lucide-react'
-import { initials, projectCode, projectColor } from '../projectUtils'
+import { initials, projectCode, projectColor } from '../utils'
 
 function AvatarStack({ count, names }: { count: number; names: string[] }) {
   const visible = names.slice(0, 3)
