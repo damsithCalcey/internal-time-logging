@@ -1,6 +1,7 @@
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
+import { ApprovalsPage } from '@/features/approvals'
 import { ProjectsPage } from '@/features/projects'
 import { TimeEntriesPage } from '@/features/time-entries'
 import { TeamPage } from '@/features/admin-users'
@@ -66,7 +67,7 @@ export const router = createBrowserRouter([
         handle: { title: 'Approval queue' },
         element: (
           <RequireRole role="manager">
-            <Placeholder title="Approval queue" stage={5} />
+            <ApprovalsPage />
           </RequireRole>
         ),
       },
