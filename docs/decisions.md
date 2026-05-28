@@ -283,6 +283,24 @@ Stage 1 gate explicitly verifies these grants via `information_schema.role_table
 
 ---
 
+## Stage 6 — Daily Log & Weekly Summary
+
+### D6-01 · DailyLogPage component modularity
+
+**Decision:** The DailyLogPage is broken into four components: `DateNavigator.tsx`, `UserFilter.tsx`, `LogTable.tsx`, `EditModal.tsx`, each in a dedicated `components/` subdirectory. Shared logic and hooks remain in `hooks.ts` and `api.ts`.
+
+**Why:** Monolithic page components are hard to navigate and test. Breaking into feature-scoped components mirrors the acyclic service graph pattern on the backend: each component owns its UI slice with clear props contracts. Page stays focused on orchestration. New features (e.g., bulk actions) add a new component without touching existing ones.
+
+---
+
+### D6-02 · WeeklySummaryPage component modularity
+
+**Decision:** The WeeklySummaryPage is broken into three components: `WeekNavigator.tsx`, `UserFilter.tsx`, `SummaryTable.tsx`. Week helpers (`toWeekStr`, `getWeekDates`, `formatWeekHeader`) and pivot logic (`buildPivot`, `buildDayTotals`) extracted to `utils.ts`.
+
+**Why:** Same modularity principle as D6-01. Extracting utilities allows independent testing of pivot logic and week-handling (no React/component test harness needed). The `SummaryTable` is now a pure view component accepting data props — useful for future features like export/print.
+
+---
+
 ### D0-15 · OI items — owners and target stages
 
 | Item | Description | Owner | Target |

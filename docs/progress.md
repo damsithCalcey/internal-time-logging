@@ -247,18 +247,20 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 - ✅ `apps/api/src/db/repositories/time-entries.ts` — `findEnrichedForLog` (joined query, date or date-range + optional userId filter)
 - ✅ `apps/api/src/features/time-entries/service.ts` — `getDailyEntries`, `getWeeklyEntries`, `parseIsoWeek` helper, `serializeLogEntry`
 - ✅ `apps/api/src/features/time-entries/routes.ts` — `GET /time-entries/daily`, `GET /time-entries/weekly` (registered before `/:id`)
-- ✅ Frontend: `apps/web/src/features/daily-log/` — api.ts, hooks.ts, DailyLogPage.tsx, index.ts
+- ✅ Frontend: `apps/web/src/features/daily-log/` — api.ts, hooks.ts, DailyLogPage.tsx, components/ with DateNavigator, UserFilter, LogTable, EditModal
   - Table layout with Project/Task, Notes, Hours, Status, Actions columns
   - Date navigator (prev/next/Today), manager user filter dropdown
   - Inline Submit/Withdraw actions; Edit opens a quick-edit modal (project/task/date/hours/notes)
   - "Log entry" CTA navigates to `/app/entries`; horizontally scrollable on mobile
   - Mutations invalidate `['time-entries']`, `['daily-log']`, and `['weekly-summary']` caches
-- ✅ Frontend: `apps/web/src/features/weekly-summary/` — api.ts, hooks.ts, WeeklySummaryPage.tsx, index.ts
+  - ✅ Refactored into modular components for maintainability (D6-01)
+- ✅ Frontend: `apps/web/src/features/weekly-summary/` — api.ts, hooks.ts, WeeklySummaryPage.tsx, components/ with WeekNavigator, SummaryTable, UserFilter; utils.ts with week helpers and pivot logic
   - ISO week navigator (prev/next/This week); week header shows date range
   - Group-by toggle: By project | By task
   - Pivot table: group name + 7 day columns (Mon–Sun) + Total; grand-total footer row
   - Manager user filter; horizontally scrollable table on mobile
   - Client-side pivot via `buildPivot()` — no server-side aggregation needed
+  - ✅ Refactored into modular components with extracted utilities (D6-02)
 - ✅ `apps/web/src/app/router.tsx` — `/app/daily` → `DailyLogPage`, `/app/weekly` → `WeeklySummaryPage`; `Placeholder` component removed
 - ✅ Frontend typecheck passes
 
