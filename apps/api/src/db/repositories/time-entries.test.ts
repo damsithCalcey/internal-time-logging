@@ -1,12 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { eq } from 'drizzle-orm'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as schema from '../schema.js'
-import * as timeEntriesRepo from './time-entries.js'
-import * as usersRepo from './users.js'
 import * as projectsRepo from './projects.js'
 import * as tasksRepo from './tasks.js'
+import * as timeEntriesRepo from './time-entries.js'
+import * as usersRepo from './users.js'
 
 const hasDb = !!process.env['DATABASE_URL']
 const itDb = hasDb ? it : it.skip
@@ -23,26 +23,27 @@ beforeAll(async () => {
   sql = postgres(process.env['DATABASE_URL']!, { max: 1 })
   db = drizzle(sql, { schema })
 
-  await usersRepo.insert(db, {
-    id: MANAGER_ID,
-    email: 'test-te-manager@example.com',
-    fullName: 'TE Test Manager',
-    role: 'manager',
-    isActive: true,
-  }).catch(() => {})
+  await usersRepo
+    .insert(db, {
+      id: MANAGER_ID,
+      email: 'test-te-manager@example.com',
+      fullName: 'TE Test Manager',
+      role: 'manager',
+      isActive: true,
+    })
+    .catch(() => {})
 
-  const project = await projectsRepo.insert(db, {
-    name: 'TE Test Project',
-    createdBy: MANAGER_ID,
-  }).catch(async () =>
-    (await projectsRepo.findByNameCaseInsensitive(db, 'TE Test Project'))!,
-  )
+  const project = await projectsRepo
+    .insert(db, {
+      name: 'TE Test Project',
+      createdBy: MANAGER_ID,
+    })
+    .catch(async () => (await projectsRepo.findByNameCaseInsensitive(db, 'TE Test Project'))!)
   projectId = project.id
 
-  const task = await tasksRepo.insert(db, { projectId, name: 'TE Test Task' })
-    .catch(async () =>
-      (await tasksRepo.findByNameCaseInsensitive(db, projectId, 'TE Test Task'))!,
-    )
+  const task = await tasksRepo
+    .insert(db, { projectId, name: 'TE Test Task' })
+    .catch(async () => (await tasksRepo.findByNameCaseInsensitive(db, projectId, 'TE Test Task'))!)
   taskId = task.id
 })
 

@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm'
-import { db } from '../client.js'
+import type { db } from '../client.js'
 import { projects, type NewProject, type Project } from '../schema.js'
 import type { Tx } from '../tx.js'
 

@@ -1,6 +1,6 @@
+import type { UserRole } from '@repo/shared-types'
 import { createMiddleware } from 'hono/factory'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
-import type { UserRole } from '@repo/shared-types'
 
 export type AuthUser = {
   id: string
@@ -38,11 +38,7 @@ export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
 
   try {
     const issuer = process.env['SUPABASE_JWT_ISSUER']
-    const { payload } = await jwtVerify(
-      token,
-      getJwks(),
-      issuer ? { issuer } : undefined,
-    )
+    const { payload } = await jwtVerify(token, getJwks(), issuer ? { issuer } : undefined)
 
     const userId = payload.sub
     const email = (payload['email'] as string | undefined) ?? ''

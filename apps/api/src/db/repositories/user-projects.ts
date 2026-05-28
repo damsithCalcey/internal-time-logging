@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { db } from '../client.js'
+import type { db } from '../client.js'
 import { userProjects, type NewUserProject, type UserProject } from '../schema.js'
 import type { Tx } from '../tx.js'
 
@@ -11,11 +11,7 @@ export const findByUser = (d: DB, userId: string): Promise<UserProject[]> =>
 export const findByProject = (d: DB, projectId: string): Promise<UserProject[]> =>
   d.select().from(userProjects).where(eq(userProjects.projectId, projectId))
 
-export const findOne = (
-  d: DB,
-  userId: string,
-  projectId: string,
-): Promise<UserProject | null> =>
+export const findOne = (d: DB, userId: string, projectId: string): Promise<UserProject | null> =>
   d
     .select()
     .from(userProjects)

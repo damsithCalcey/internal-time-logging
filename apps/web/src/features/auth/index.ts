@@ -1,6 +1,6 @@
 export { AuthProvider, useAuth } from './AuthProvider'
-export { useLogin } from './useLogin'
-export { useLogout } from './useLogout'
 export { LoginPage } from './LoginPage'
 export { RequireAuth } from './RequireAuth'
 export { RequireRole } from './RequireRole'
+export { useLogin } from './useLogin'
+export { useLogout } from './useLogout'

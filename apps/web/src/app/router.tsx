@@ -9,7 +9,7 @@ function Placeholder({ title, stage }: { title: string; stage: number }) {
   return (
     <div className="flex flex-col gap-2 py-8">
       <h2
-        className="font-display font-bold text-ink-1000"
+        className="font-display text-ink-1000 font-bold"
         style={{ fontSize: 24, letterSpacing: '-0.01em' }}
       >
         {title}

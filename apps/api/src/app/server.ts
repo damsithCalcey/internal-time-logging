@@ -36,7 +36,10 @@ app.route('/', api)
 // Global error handler
 app.onError((err, c) => {
   if (err instanceof HttpError) {
-    return c.json({ error: err.message, code: err.code }, err.status as 400 | 401 | 403 | 404 | 405 | 409)
+    return c.json(
+      { error: err.message, code: err.code },
+      err.status as 400 | 401 | 403 | 404 | 405 | 409,
+    )
   }
   logger.error({ err }, 'Unhandled error')
   return c.json({ error: 'Internal server error' }, 500)

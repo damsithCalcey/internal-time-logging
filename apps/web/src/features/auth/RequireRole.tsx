@@ -1,6 +1,6 @@
+import type { UserRole } from '@repo/shared-types'
 import { type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
-import type { UserRole } from '@repo/shared-types'
 import { useAuth } from './AuthProvider'
 
 interface Props {

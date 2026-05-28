@@ -1,5 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
 import { supabase } from '@/shared/supabase'
+import { useMutation } from '@tanstack/react-query'
 
 export function useLogout() {
   return useMutation({

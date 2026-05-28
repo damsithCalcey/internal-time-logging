@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import { db } from '../client.js'
+import type { db } from '../client.js'
 import { timerSessions, type NewTimerSession, type TimerSession } from '../schema.js'
 import type { Tx } from '../tx.js'
 
@@ -12,11 +12,7 @@ export const findById = (d: DB, id: string): Promise<TimerSession | null> =>
     .where(eq(timerSessions.id, id))
     .then((r) => r[0] ?? null)
 
-export const findByIdForUser = (
-  d: DB,
-  id: string,
-  userId: string,
-): Promise<TimerSession | null> =>
+export const findByIdForUser = (d: DB, id: string, userId: string): Promise<TimerSession | null> =>
   d
     .select()
     .from(timerSessions)
@@ -29,10 +25,7 @@ export const findActiveOrStopped = (d: DB, userId: string): Promise<TimerSession
     .select()
     .from(timerSessions)
     .where(
-      and(
-        eq(timerSessions.userId, userId),
-        inArray(timerSessions.status, ['active', 'stopped']),
-      ),
+      and(eq(timerSessions.userId, userId), inArray(timerSessions.status, ['active', 'stopped'])),
     )
     .then((r) => r[0] ?? null)
 
@@ -43,11 +36,7 @@ export const insert = (d: DB, data: NewTimerSession): Promise<TimerSession> =>
     .returning()
     .then((r) => r[0]!)
 
-export const markStopped = (
-  d: DB,
-  id: string,
-  stoppedAt: Date,
-): Promise<TimerSession | null> =>
+export const markStopped = (d: DB, id: string, stoppedAt: Date): Promise<TimerSession | null> =>
   d
     .update(timerSessions)
     .set({ stoppedAt, status: 'stopped' })
@@ -55,11 +44,7 @@ export const markStopped = (
     .returning()
     .then((r) => r[0] ?? null)
 
-export const markSaved = (
-  d: DB,
-  id: string,
-  timeEntryId: string,
-): Promise<TimerSession | null> =>
+export const markSaved = (d: DB, id: string, timeEntryId: string): Promise<TimerSession | null> =>
   d
     .update(timerSessions)
     .set({ timeEntryId, status: 'saved' })
@@ -81,7 +66,5 @@ export const discardActiveFor = (d: DB, userId: string): Promise<TimerSession[]>
   d
     .update(timerSessions)
     .set({ stoppedAt: new Date(), status: 'discarded' })
-    .where(
-      and(eq(timerSessions.userId, userId), eq(timerSessions.status, 'active')),
-    )
+    .where(and(eq(timerSessions.userId, userId), eq(timerSessions.status, 'active')))
     .returning()

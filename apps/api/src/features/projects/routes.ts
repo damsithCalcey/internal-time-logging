@@ -54,7 +54,11 @@ projectRoutes.post(
     const body = c.req.valid('json')
     const project = await service.createProject(user.id, body)
     return c.json(
-      { ...project, createdAt: project.createdAt.toISOString(), updatedAt: project.updatedAt.toISOString() },
+      {
+        ...project,
+        createdAt: project.createdAt.toISOString(),
+        updatedAt: project.updatedAt.toISOString(),
+      },
       201,
     )
   },
@@ -88,15 +92,11 @@ projectRoutes.post(
 )
 
 // DELETE /projects/:id/assignments/:userId — manager only
-projectRoutes.delete(
-  '/projects/:id/assignments/:userId',
-  requireRole('manager'),
-  async (c) => {
-    const projectId = c.req.param('id')
-    const userId = c.req.param('userId')
-    await service.unassignUser(projectId, userId)
-    return c.body(null, 204)
-  },
-)
+projectRoutes.delete('/projects/:id/assignments/:userId', requireRole('manager'), async (c) => {
+  const projectId = c.req.param('id')
+  const userId = c.req.param('userId')
+  await service.unassignUser(projectId, userId)
+  return c.body(null, 204)
+})
 
 export default projectRoutes

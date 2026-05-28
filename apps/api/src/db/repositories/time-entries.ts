@@ -1,5 +1,5 @@
 import { and, eq, ne, sql, sum } from 'drizzle-orm'
-import { db } from '../client.js'
+import type { db } from '../client.js'
 import { timeEntries, type NewTimeEntry, type TimeEntry } from '../schema.js'
 import type { Tx } from '../tx.js'
 
@@ -15,11 +15,7 @@ export const findById = (d: DB, id: string): Promise<TimeEntry | null> =>
 export const findByUser = (d: DB, userId: string): Promise<TimeEntry[]> =>
   d.select().from(timeEntries).where(eq(timeEntries.userId, userId))
 
-export const findByUserAndDate = (
-  d: DB,
-  userId: string,
-  entryDate: string,
-): Promise<TimeEntry[]> =>
+export const findByUserAndDate = (d: DB, userId: string, entryDate: string): Promise<TimeEntry[]> =>
   d
     .select()
     .from(timeEntries)

@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm'
-import { db } from '../client.js'
+import type { db } from '../client.js'
 import { tasks, type NewTask, type Task } from '../schema.js'
 import type { Tx } from '../tx.js'
 
@@ -29,9 +29,7 @@ export const findByNameCaseInsensitive = (
   d
     .select()
     .from(tasks)
-    .where(
-      and(eq(tasks.projectId, projectId), sql`lower(${tasks.name}) = lower(${name})`),
-    )
+    .where(and(eq(tasks.projectId, projectId), sql`lower(${tasks.name}) = lower(${name})`))
     .then((r) => r[0] ?? null)
 
 export const insert = (d: DB, data: NewTask): Promise<Task> =>

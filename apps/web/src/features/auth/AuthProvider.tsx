@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '@/shared/supabase'
 import { http } from '@/shared/http'
+import { supabase } from '@/shared/supabase'
 import type { MeResponse } from '@repo/shared-types'
+import type { Session } from '@supabase/supabase-js'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
 interface AuthContextValue {
   user: MeResponse | null
@@ -24,7 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, s) => {
       setSession(s)
       if (!s) qc.removeQueries({ queryKey: ['me'] })
     })

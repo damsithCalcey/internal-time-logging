@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
@@ -14,7 +15,6 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
 
 export const userRoleEnum = pgEnum('user_role', ['manager', 'employee'])
 export const timeEntryStatusEnum = pgEnum('time_entry_status', [
@@ -164,9 +164,13 @@ export const timerSessions = pgTable(
       name: 'timer_sessions_project_task_fk',
     }).onDelete('restrict'),
     // One active timer per user (BRD §5.3)
-    uniqueIndex('timer_active_per_user').on(table.userId).where(sql`stopped_at IS NULL`),
+    uniqueIndex('timer_active_per_user')
+      .on(table.userId)
+      .where(sql`stopped_at IS NULL`),
     // One pending-save session per user (§1.5, D0-10)
-    uniqueIndex('timer_stopped_per_user').on(table.userId).where(sql`status = 'stopped'`),
+    uniqueIndex('timer_stopped_per_user')
+      .on(table.userId)
+      .where(sql`status = 'stopped'`),
   ],
 )
 

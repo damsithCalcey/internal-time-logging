@@ -9,7 +9,8 @@ import { countDistinct, eq, sql } from 'drizzle-orm'
 
 export async function createProject(callerId: string, data: CreateProjectBody) {
   const existing = await projectsRepo.findByNameCaseInsensitive(db, data.name)
-  if (existing) throw new ConflictError('A project with this name already exists', 'project-name-conflict')
+  if (existing)
+    throw new ConflictError('A project with this name already exists', 'project-name-conflict')
   return projectsRepo.insert(db, {
     name: data.name,
     description: data.description ?? null,
@@ -31,7 +32,13 @@ export async function listProjects() {
     .from(projects)
     .leftJoin(tasks, eq(tasks.projectId, projects.id))
     .leftJoin(userProjects, eq(userProjects.projectId, projects.id))
-    .groupBy(projects.id, projects.name, projects.description, projects.createdAt, projects.updatedAt)
+    .groupBy(
+      projects.id,
+      projects.name,
+      projects.description,
+      projects.createdAt,
+      projects.updatedAt,
+    )
     .orderBy(sql`lower(${projects.name})`)
 
   return rows.map((r) => ({
@@ -85,7 +92,8 @@ export async function updateProject(id: string, data: UpdateProjectBody) {
 
   if (data.name !== undefined && data.name.toLowerCase() !== project.name.toLowerCase()) {
     const existing = await projectsRepo.findByNameCaseInsensitive(db, data.name)
-    if (existing) throw new ConflictError('A project with this name already exists', 'project-name-conflict')
+    if (existing)
+      throw new ConflictError('A project with this name already exists', 'project-name-conflict')
   }
 
   const updated = await projectsRepo.update(db, id, {
@@ -105,7 +113,8 @@ export async function assignUser(projectId: string, userId: string, assignedBy: 
   if (!project) throw new NotFoundError('Project not found')
 
   const existing = await userProjectsRepo.findOne(db, userId, projectId)
-  if (existing) throw new ConflictError('User is already assigned to this project', 'user-already-assigned')
+  if (existing)
+    throw new ConflictError('User is already assigned to this project', 'user-already-assigned')
 
   const assignment = await userProjectsRepo.insert(db, { userId, projectId, assignedBy })
   return { ...assignment, assignedAt: assignment.assignedAt.toISOString() }
@@ -120,7 +129,11 @@ export async function unassignUser(projectId: string, userId: string) {
 // Accessible to any authenticated user — for time-entry dropdowns (Stage 4+)
 // Returns only projects that have at least one active task.
 // For employees, further filtered to only projects they're assigned to.
-export async function listProjectsForTimeEntry(callerId: string, callerRole: string, forUserId?: string) {
+export async function listProjectsForTimeEntry(
+  callerId: string,
+  callerRole: string,
+  forUserId?: string,
+) {
   const targetUserId = callerRole === 'manager' && forUserId ? forUserId : callerId
 
   const rows = await db
@@ -155,9 +168,19 @@ export async function listProjectsForTimeEntry(callerId: string, callerRole: str
 
 export async function getStats() {
   const [projectCount, taskCount, memberCount] = await Promise.all([
-    db.select({ count: countDistinct(projects.id) }).from(projects).then((r) => Number(r[0]?.count ?? 0)),
-    db.select({ count: countDistinct(tasks.id) }).from(tasks).where(eq(tasks.isActive, true)).then((r) => Number(r[0]?.count ?? 0)),
-    db.select({ count: countDistinct(userProjects.userId) }).from(userProjects).then((r) => Number(r[0]?.count ?? 0)),
+    db
+      .select({ count: countDistinct(projects.id) })
+      .from(projects)
+      .then((r) => Number(r[0]?.count ?? 0)),
+    db
+      .select({ count: countDistinct(tasks.id) })
+      .from(tasks)
+      .where(eq(tasks.isActive, true))
+      .then((r) => Number(r[0]?.count ?? 0)),
+    db
+      .select({ count: countDistinct(userProjects.userId) })
+      .from(userProjects)
+      .then((r) => Number(r[0]?.count ?? 0)),
   ])
   return { projectCount, taskCount, memberCount }
 }

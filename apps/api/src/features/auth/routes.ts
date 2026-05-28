@@ -1,6 +1,6 @@
-import { Hono } from 'hono'
 import type { AppEnv } from '@/shared/auth.js'
 import type { MeResponse } from '@repo/shared-types'
+import { Hono } from 'hono'
 
 const authRoutes = new Hono<AppEnv>()
 

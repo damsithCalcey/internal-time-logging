@@ -19,13 +19,15 @@ beforeAll(async () => {
   sql = postgres(process.env['DATABASE_URL']!, { max: 1 })
   db = drizzle(sql, { schema })
   // Seed manager user
-  await usersRepo.insert(db, {
-    id: MANAGER_ID,
-    email: 'test-project-manager@example.com',
-    fullName: 'Project Test Manager',
-    role: 'manager',
-    isActive: true,
-  }).catch(() => {})
+  await usersRepo
+    .insert(db, {
+      id: MANAGER_ID,
+      email: 'test-project-manager@example.com',
+      fullName: 'Project Test Manager',
+      role: 'manager',
+      isActive: true,
+    })
+    .catch(() => {})
 })
 
 afterAll(async () => {
