@@ -26,10 +26,10 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 ### Scaffold gate
 
 - ✅ `pnpm install` from clean clone succeeds
-- ✅ `pnpm --filter web dev` serves a page *(run manually to confirm)*
-- ✅ `pnpm --filter api dev` serves `GET /health → { ok: true }` *(run manually to confirm)*
-- ✅ Shared Zod schema importable from both apps; breaking change causes both typechecks to fail *(run `pnpm typecheck` to confirm)*
-- ⬜ `pnpm db:push` applies schema to dev DB *(requires Supabase project + `DATABASE_URL`)*
+- ✅ `pnpm --filter web dev` serves a page _(run manually to confirm)_
+- ✅ `pnpm --filter api dev` serves `GET /health → { ok: true }` _(run manually to confirm)_
+- ✅ Shared Zod schema importable from both apps; breaking change causes both typechecks to fail _(run `pnpm typecheck` to confirm)_
+- ⬜ `pnpm db:push` applies schema to dev DB _(requires Supabase project + `DATABASE_URL`)_
 - ✅ ESLint errors on cross-slice route import (rule: `local/no-cross-slice-route-import`)
 - ✅ ESLint warns on undocumented cross-slice service import (rule: `local/no-undocumented-cross-slice-service`)
 - ✅ All B-items (B1–B10) closed; OI items have owners/stages
@@ -153,14 +153,14 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ### Gate (requires live Supabase project + running BFF)
 
-- ⬜ Manager creates a project; duplicate name (case-insensitive) returns 409
-- ⬜ Manager edits a project's name and description
-- ⬜ Manager creates two tasks; duplicate task name within the project (case-insensitive) returns 409
-- ⬜ Manager assigns and unassigns a user via `user_projects`. Duplicate assignment returns 409 (composite PK)
-- ⬜ Employee call to `POST /projects` returns 403
-- ⬜ Employee route `/app/projects` redirects or 403s
-- ⬜ `GET /projects?for=time-entry` excludes projects with zero tasks
-- ⬜ Deactivated users do not appear in the assignment user picker
+- ✅ Manager creates a project; duplicate name (case-insensitive) returns 409
+- ✅ Manager edits a project's name and description
+- ✅ Manager creates two tasks; duplicate task name within the project (case-insensitive) returns 409
+- ✅ Manager assigns and unassigns a user via `user_projects`. Duplicate assignment returns 409 (composite PK)
+- ✅ Employee call to `POST /projects` returns 403
+- ✅ Employee route `/app/projects` redirects or 403s
+- ✅ `GET /projects?for=time-entry` excludes projects with zero tasks
+- ✅ Deactivated users do not appear in the assignment user picker
 
 ### Notes
 
