@@ -2,14 +2,7 @@ import { useAuth } from '@/features/auth/AuthProvider'
 import { usersApi } from '@/features/projects/api'
 import type { LogEntry } from '@repo/shared-types'
 import { useQuery } from '@tanstack/react-query'
-import {
-  addWeeks,
-  format,
-  getISOWeek,
-  getISOWeekYear,
-  startOfISOWeek,
-  subWeeks,
-} from 'date-fns'
+import { addWeeks, format, getISOWeek, getISOWeekYear, startOfISOWeek, subWeeks } from 'date-fns'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useWeeklySummary } from './hooks'
@@ -41,7 +34,6 @@ function formatWeekHeader(weekStr: string): string {
   if (dates.length < 7) return weekStr
   const mon = new Date(`${dates[0]}T00:00:00`)
   const sun = new Date(`${dates[6]}T00:00:00`)
-  const year = getISOWeekYear(mon)
   const weekNum = getISOWeek(mon)
   if (mon.getMonth() === sun.getMonth()) {
     return `W${weekNum} · ${format(mon, 'MMM d')}–${format(sun, 'd, yyyy')}`
@@ -59,10 +51,7 @@ type GroupRow = {
   total: number
 }
 
-function buildPivot(
-  entries: LogEntry[],
-  groupBy: 'project' | 'task',
-): GroupRow[] {
+function buildPivot(entries: LogEntry[], groupBy: 'project' | 'task'): GroupRow[] {
   const map = new Map<string, GroupRow>()
 
   for (const entry of entries) {
@@ -135,8 +124,7 @@ export function WeeklySummaryPage() {
 
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-  const thClass =
-    'text-ink-400 py-3 px-3 text-right font-mono uppercase whitespace-nowrap'
+  const thClass = 'text-ink-400 py-3 px-3 text-right font-mono uppercase whitespace-nowrap'
   const thStyle = { fontSize: 11, letterSpacing: '0.1em' } as const
   const tdClass = 'py-3 px-3 text-right'
 
@@ -192,9 +180,7 @@ export function WeeklySummaryPage() {
           <button
             onClick={() => setGroupBy('task')}
             className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-              groupBy === 'task'
-                ? 'bg-tropical-magenta text-white'
-                : 'text-ink-600 hover:bg-ink-50'
+              groupBy === 'task' ? 'bg-tropical-magenta text-white' : 'text-ink-600 hover:bg-ink-50'
             }`}
           >
             By task
@@ -214,11 +200,13 @@ export function WeeklySummaryPage() {
           <select
             value={userFilter}
             onChange={(e) => setUserFilter(e.target.value)}
-            className="border-ink-200 rounded-xl border bg-white px-3 py-1.5 text-sm text-ink-1000 outline-none transition-colors focus:border-tropical-magenta focus:ring-2 focus:ring-tropical-magenta/20"
+            className="border-ink-200 text-ink-1000 focus:border-tropical-magenta focus:ring-tropical-magenta/20 rounded-xl border bg-white px-3 py-1.5 text-sm transition-colors outline-none focus:ring-2"
           >
             <option value="">All employees</option>
             {activeUsers.map((u) => (
-              <option key={u.id} value={u.id}>{u.fullName}</option>
+              <option key={u.id} value={u.id}>
+                {u.fullName}
+              </option>
             ))}
           </select>
         </div>
@@ -243,7 +231,7 @@ export function WeeklySummaryPage() {
               <thead>
                 <tr className="border-ink-100 border-b">
                   <th
-                    className="text-ink-400 py-3 pl-5 pr-3 text-left font-mono uppercase"
+                    className="text-ink-400 py-3 pr-3 pl-5 text-left font-mono uppercase"
                     style={thStyle}
                   >
                     {groupBy === 'project' ? 'Project' : 'Task'}
@@ -257,7 +245,7 @@ export function WeeklySummaryPage() {
                     </th>
                   ))}
                   <th
-                    className="border-ink-100 border-l py-3 pl-3 pr-5 text-right font-mono uppercase"
+                    className="border-ink-100 border-l py-3 pr-5 pl-3 text-right font-mono uppercase"
                     style={{ ...thStyle, color: 'var(--ink-600)' }}
                   >
                     Total
@@ -266,8 +254,11 @@ export function WeeklySummaryPage() {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.key} className="border-ink-100 border-b last:border-b-0 hover:bg-ink-50/50">
-                    <td className="py-3 pl-5 pr-3">
+                  <tr
+                    key={row.key}
+                    className="border-ink-100 hover:bg-ink-50/50 border-b last:border-b-0"
+                  >
+                    <td className="py-3 pr-3 pl-5">
                       <p className="text-ink-1000 font-semibold" style={{ fontSize: 14 }}>
                         {row.name}
                       </p>
@@ -282,8 +273,11 @@ export function WeeklySummaryPage() {
                         <HoursCell hours={row.days[date]} />
                       </td>
                     ))}
-                    <td className="border-ink-100 border-l py-3 pl-3 pr-5 text-right">
-                      <span className="text-ink-1000 font-mono font-semibold" style={{ fontSize: 14 }}>
+                    <td className="border-ink-100 border-l py-3 pr-5 pl-3 text-right">
+                      <span
+                        className="text-ink-1000 font-mono font-semibold"
+                        style={{ fontSize: 14 }}
+                      >
                         {row.total % 1 === 0 ? row.total : row.total.toFixed(1)}h
                       </span>
                     </td>
@@ -292,8 +286,8 @@ export function WeeklySummaryPage() {
               </tbody>
               {/* Totals footer */}
               <tfoot>
-                <tr className="border-ink-100 border-t bg-ink-50">
-                  <td className="py-3 pl-5 pr-3">
+                <tr className="border-ink-100 bg-ink-50 border-t">
+                  <td className="py-3 pr-3 pl-5">
                     <span
                       className="text-ink-400 font-mono font-semibold uppercase"
                       style={{ fontSize: 11, letterSpacing: '0.1em' }}
@@ -304,7 +298,10 @@ export function WeeklySummaryPage() {
                   {weekDates.map((date) => (
                     <td key={date} className={tdClass}>
                       {dayTotals[date] ? (
-                        <span className="text-ink-700 font-mono font-semibold" style={{ fontSize: 13 }}>
+                        <span
+                          className="text-ink-700 font-mono font-semibold"
+                          style={{ fontSize: 13 }}
+                        >
                           {(dayTotals[date] ?? 0) % 1 === 0
                             ? dayTotals[date]
                             : (dayTotals[date] ?? 0).toFixed(1)}
@@ -314,7 +311,7 @@ export function WeeklySummaryPage() {
                       )}
                     </td>
                   ))}
-                  <td className="border-ink-100 border-l py-3 pl-3 pr-5 text-right">
+                  <td className="border-ink-100 border-l py-3 pr-5 pl-3 text-right">
                     <span className="text-ink-1000 font-mono font-bold" style={{ fontSize: 15 }}>
                       {grandTotal % 1 === 0 ? grandTotal : grandTotal.toFixed(1)}h
                     </span>
