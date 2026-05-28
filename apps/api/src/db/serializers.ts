@@ -1,4 +1,4 @@
-import type { TimeEntry } from './schema.js'
+import type { Project, Task, TimeEntry, User, UserProject } from './schema.js'
 
 type EnrichedRow = {
   id: string
@@ -29,6 +29,72 @@ export function serializeTimeEntry(entry: TimeEntry) {
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
     amendedAt: entry.amendedAt?.toISOString() ?? null,
+  }
+}
+
+export function serializeProject(p: Project) {
+  return {
+    ...p,
+    createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
+  }
+}
+
+type ProjectListRow = {
+  id: string
+  name: string
+  description: string | null
+  createdAt: Date
+  updatedAt: Date
+  taskCount: number
+  memberCount: number
+}
+
+export function serializeProjectListRow(r: ProjectListRow) {
+  return {
+    ...r,
+    taskCount: Number(r.taskCount),
+    memberCount: Number(r.memberCount),
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }
+}
+
+export function serializeTask(t: Task) {
+  return {
+    ...t,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+  }
+}
+
+export function serializeUser(u: User) {
+  return {
+    ...u,
+    createdAt: u.createdAt.toISOString(),
+    updatedAt: u.updatedAt.toISOString(),
+  }
+}
+
+export function serializeUserProject(a: UserProject) {
+  return {
+    ...a,
+    assignedAt: a.assignedAt.toISOString(),
+  }
+}
+
+type MemberRow = {
+  userId: string
+  fullName: string
+  email: string
+  role: User['role']
+  assignedAt: Date
+}
+
+export function serializeMember(m: MemberRow) {
+  return {
+    ...m,
+    assignedAt: m.assignedAt.toISOString(),
   }
 }
 

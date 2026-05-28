@@ -1,16 +1,9 @@
 import { db } from '@/db/client.js'
 import * as projectsRepo from '@/db/repositories/projects.js'
 import * as tasksRepo from '@/db/repositories/tasks.js'
+import { serializeTask } from '@/db/serializers.js'
 import { ConflictError, NotFoundError } from '@/shared/errors.js'
 import type { CreateTaskBody, UpdateTaskBody } from '@repo/shared-types'
-
-function toResponse(task: Awaited<ReturnType<typeof tasksRepo.findById>> & object) {
-  return {
-    ...task,
-    createdAt: task.createdAt.toISOString(),
-    updatedAt: task.updatedAt.toISOString(),
-  }
-}
 
 export async function createTask(projectId: string, data: CreateTaskBody) {
   const project = await projectsRepo.findById(db, projectId)
@@ -24,7 +17,7 @@ export async function createTask(projectId: string, data: CreateTaskBody) {
     )
 
   const task = await tasksRepo.insert(db, { projectId, name: data.name })
-  return toResponse(task)
+  return serializeTask(task)
 }
 
 export async function listTasks(projectId: string) {
@@ -32,7 +25,7 @@ export async function listTasks(projectId: string) {
   if (!project) throw new NotFoundError('Project not found')
 
   const all = await tasksRepo.findByProject(db, projectId)
-  return all.map(toResponse)
+  return all.map(serializeTask)
 }
 
 export async function updateTask(id: string, data: UpdateTaskBody) {
@@ -53,5 +46,5 @@ export async function updateTask(id: string, data: UpdateTaskBody) {
     ...(data.isActive !== undefined && { isActive: data.isActive }),
   })
   if (!updated) throw new NotFoundError('Task not found')
-  return toResponse(updated)
+  return serializeTask(updated)
 }

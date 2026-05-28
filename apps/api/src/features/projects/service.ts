@@ -2,6 +2,13 @@ import { db } from '@/db/client.js'
 import * as projectsRepo from '@/db/repositories/projects.js'
 import * as tasksRepo from '@/db/repositories/tasks.js'
 import * as userProjectsRepo from '@/db/repositories/user-projects.js'
+import {
+  serializeMember,
+  serializeProject,
+  serializeProjectListRow,
+  serializeTask,
+  serializeUserProject,
+} from '@/db/serializers.js'
 import { ConflictError, NotFoundError } from '@/shared/errors.js'
 import type { CreateProjectBody, UpdateProjectBody } from '@repo/shared-types'
 
@@ -18,13 +25,7 @@ export async function createProject(callerId: string, data: CreateProjectBody) {
 
 export async function listProjects() {
   const rows = await projectsRepo.listWithCounts(db)
-  return rows.map((r) => ({
-    ...r,
-    taskCount: Number(r.taskCount),
-    memberCount: Number(r.memberCount),
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  }))
+  return rows.map(serializeProjectListRow)
 }
 
 export async function getProjectDetail(id: string) {
@@ -37,18 +38,9 @@ export async function getProjectDetail(id: string) {
   ])
 
   return {
-    ...project,
-    createdAt: project.createdAt.toISOString(),
-    updatedAt: project.updatedAt.toISOString(),
-    tasks: allTasks.map((t) => ({
-      ...t,
-      createdAt: t.createdAt.toISOString(),
-      updatedAt: t.updatedAt.toISOString(),
-    })),
-    members: memberRows.map((m) => ({
-      ...m,
-      assignedAt: m.assignedAt.toISOString(),
-    })),
+    ...serializeProject(project),
+    tasks: allTasks.map(serializeTask),
+    members: memberRows.map(serializeMember),
   }
 }
 
@@ -67,11 +59,7 @@ export async function updateProject(id: string, data: UpdateProjectBody) {
     ...(data.description !== undefined && { description: data.description }),
   })
   if (!updated) throw new NotFoundError('Project not found')
-  return {
-    ...updated,
-    createdAt: updated.createdAt.toISOString(),
-    updatedAt: updated.updatedAt.toISOString(),
-  }
+  return serializeProject(updated)
 }
 
 export async function assignUser(projectId: string, userId: string, assignedBy: string) {
@@ -83,7 +71,7 @@ export async function assignUser(projectId: string, userId: string, assignedBy: 
     throw new ConflictError('User is already assigned to this project', 'user-already-assigned')
 
   const assignment = await userProjectsRepo.insert(db, { userId, projectId, assignedBy })
-  return { ...assignment, assignedAt: assignment.assignedAt.toISOString() }
+  return serializeUserProject(assignment)
 }
 
 export async function unassignUser(projectId: string, userId: string) {

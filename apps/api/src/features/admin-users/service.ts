@@ -1,6 +1,6 @@
 import { db } from '@/db/client.js'
 import * as usersRepo from '@/db/repositories/users.js'
-import type { User } from '@/db/schema.js'
+import { serializeUser } from '@/db/serializers.js'
 import { withTx } from '@/db/tx.js'
 import * as timeEntriesService from '@/features/time-entries/service.js'
 import * as timerService from '@/features/timer/service.js'
@@ -8,14 +8,6 @@ import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors.j
 import { logger } from '@/shared/logger.js'
 import { supabaseAdmin } from '@/shared/supabase-admin.js'
 import type { CreateUserBody, UpdateUserBody } from '@repo/shared-types'
-
-function serializeUser(user: User) {
-  return {
-    ...user,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
-  }
-}
 
 export async function listUsers() {
   const all = await usersRepo.findAll(db)
