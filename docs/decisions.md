@@ -38,6 +38,40 @@ Tracks every architectural and design decision made during development. Updated 
 
 ---
 
+## Stage 3 — Projects & Tasks Slice
+
+### D3-01 · GET /users route lives in a minimal `users` feature, not `admin-users`
+
+**Decision:** A read-only `GET /users` endpoint (returns active users for pickers) is added under `apps/api/src/features/users/routes.ts`. The full `admin-users` feature (CRUD, deactivation, reactivation) ships in Stage 4.
+
+**Why:** The assignment picker in the projects UI needs a list of active users. The `admin-users` slice that will own user management is Stage 4 work. Putting a minimal read route here avoids leaking Stage 4 concerns into Stage 3 while keeping the feature boundary clean. Stage 4 will register the admin operations under the same `/users` path prefix.
+
+---
+
+### D3-02 · Split-panel layout with React state for selected project
+
+**Decision:** The Projects page uses a two-column split layout (1.4fr / 1fr) on the same route (`/app/projects`). Clicking a project updates local React state (`selectedId`) rather than navigating to `/app/projects/:id`.
+
+**Why:** The design spec shows a master-detail layout on a single page. Using URL-based navigation would require scroll-position handling and additional route definitions without user-visible benefit for an internal tool with a small number of projects (< 50 expected). If deep-linking to a specific project becomes a requirement, the `selectedId` state can be lifted to a query param later.
+
+---
+
+### D3-03 · Project stats as a dedicated `GET /projects/stats` endpoint
+
+**Decision:** Aggregate counts (project count, task count, distinct member count) are returned by a separate `GET /projects/stats` endpoint rather than embedded in the list response.
+
+**Why:** The stat strip needs counts that span all projects, not per-row aggregates. Computing them server-side in a single query is cheaper than summing client-side task/member counts (which would double-count members assigned to multiple projects). A separate endpoint lets the stat strip refresh independently of the list.
+
+---
+
+### D3-04 · `GET /projects?for=time-entry` accessible to all authenticated users
+
+**Decision:** `GET /projects` without the `for=time-entry` param is manager-only (admin list). The `for=time-entry` variant is accessible to any authenticated user and is filtered by assignment for employees (manager sees all, employee sees only their assigned projects with at least one active task).
+
+**Why:** The time-entry form (Stage 4) needs the project+task dropdown for both employees and managers. Employees should only see their own assigned projects; managers see everything. This mirrors the dev plan §3 description of the endpoint. The distinction is a query-param branch in the same route handler.
+
+---
+
 ## Stage 2 — Frontend Shell & Auth Slice
 
 ### D2-01 · `AuthProvider` exposes `meError` for inactive-account handling

@@ -134,7 +134,40 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 3 — Projects & Tasks Slice ⬜
+## Stage 3 — Projects & Tasks Slice 🔄
+
+### Deliverables
+
+- ✅ Shared Zod schemas in `@repo/shared-types` — `CreateProjectBody`, `UpdateProjectBody`, `CreateTaskBody`, `UpdateTaskBody`, `AssignUserBody`, `ProjectListItem`, `ProjectDetail`, `Task`, `AssignedMember`, `ProjectOption`, `ProjectStats`, `UserOption`
+- ✅ BFF: `apps/api/src/features/projects/service.ts` — createProject, listProjects, getProjectDetail, updateProject, assignUser, unassignUser, listProjectsForTimeEntry, getStats
+- ✅ BFF: `apps/api/src/features/projects/routes.ts` — GET/POST/PATCH /projects, GET /projects/stats, GET/PATCH /projects/:id, POST/DELETE /projects/:id/assignments
+- ✅ BFF: `apps/api/src/features/tasks/service.ts` — createTask, listTasks, updateTask
+- ✅ BFF: `apps/api/src/features/tasks/routes.ts` — GET/POST /projects/:id/tasks, PATCH /tasks/:id
+- ✅ BFF: `apps/api/src/features/users/routes.ts` — GET /users (active users for pickers)
+- ✅ `apps/api/src/app/server.ts` updated to register all new routes
+- ✅ Frontend: `apps/web/src/features/projects/api.ts` — typed BFF calls
+- ✅ Frontend: `apps/web/src/features/projects/hooks.ts` — TanStack Query hooks (useProjects, useProjectStats, useProjectDetail, useCreateProject, useUpdateProject, useCreateTask, useUpdateTask, useAssignUser, useUnassignUser, useActiveUsers)
+- ✅ Frontend: `apps/web/src/features/projects/ProjectsPage.tsx` — split-panel UI with stat strip, projects list, project detail panel
+- ✅ `apps/web/src/app/router.tsx` updated: `/app/projects` uses `ProjectsPage`
+- ✅ BFF and frontend typecheck passes cleanly
+
+### Gate (requires live Supabase project + running BFF)
+
+- ⬜ Manager creates a project; duplicate name (case-insensitive) returns 409
+- ⬜ Manager edits a project's name and description
+- ⬜ Manager creates two tasks; duplicate task name within the project (case-insensitive) returns 409
+- ⬜ Manager assigns and unassigns a user via `user_projects`. Duplicate assignment returns 409 (composite PK)
+- ⬜ Employee call to `POST /projects` returns 403
+- ⬜ Employee route `/app/projects` redirects or 403s
+- ⬜ `GET /projects?for=time-entry` excludes projects with zero tasks
+- ⬜ Deactivated users do not appear in the assignment user picker
+
+### Notes
+
+- Gate requires live Supabase project, seed data, and BFF running (`pnpm --filter api dev`)
+- `GET /projects?for=time-entry` is ready for Stage 4 time-entry form consumption
+- `GET /projects/stats` powers the stat strip (team member count uses countDistinct across user_projects)
+- `GET /users` returns active-only users — will be extended with admin operations in Stage 4
 
 ---
 

@@ -1,7 +1,8 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { RequireRole } from '@/features/auth/RequireRole'
+import { ProjectsPage } from '@/features/projects'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from './shell/AppShell'
 
 function Placeholder({ title, stage }: { title: string; stage: number }) {
@@ -70,7 +71,7 @@ export const router = createBrowserRouter([
         handle: { title: 'Projects' },
         element: (
           <RequireRole role="manager">
-            <Placeholder title="Projects" stage={3} />
+            <ProjectsPage />
           </RequireRole>
         ),
       },
