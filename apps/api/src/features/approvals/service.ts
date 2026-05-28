@@ -1,12 +1,12 @@
 import { db } from '@/db/client.js'
 import * as timeEntriesRepo from '@/db/repositories/time-entries.js'
 import { serializeEnrichedEntry, serializeTimeEntry } from '@/db/serializers.js'
-import type { TimeEntry } from '@/db/schema.js'
 import { ConflictError, NotFoundError } from '@/shared/errors.js'
+import type { TimeEntryStatus } from '@repo/shared-types'
 import { canTransition } from '@/shared/state-machine.js'
 
 export async function getQueue(filters: {
-  status?: TimeEntry['status']
+  status?: TimeEntryStatus
   userId?: string
   from?: string
   to?: string

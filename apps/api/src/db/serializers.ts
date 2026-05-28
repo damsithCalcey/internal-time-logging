@@ -1,7 +1,25 @@
-import type * as timeEntriesRepo from './repositories/time-entries.js'
 import type { TimeEntry } from './schema.js'
 
-type EnrichedRow = Awaited<ReturnType<typeof timeEntriesRepo.findEnrichedForLog>>[number]
+type EnrichedRow = {
+  id: string
+  userId: string
+  projectId: string
+  taskId: string
+  entryDate: string
+  hours: string
+  notes: string | null
+  status: TimeEntry['status']
+  managerNote: string | null
+  amendedAt: Date | null
+  amendedBy: string | null
+  originalHours: string | null
+  createdAt: Date
+  updatedAt: Date
+  userName: string
+  projectName: string
+  taskName: string
+  amendedByName: string | null
+}
 
 export function serializeTimeEntry(entry: TimeEntry) {
   return {
