@@ -50,3 +50,12 @@ export const TimeEntrySchema = z.object({
   updatedAt: z.string(),
 })
 export type TimeEntry = z.infer<typeof TimeEntrySchema>
+
+// TimeEntry extended with joined display names for daily log and weekly summary views
+export const LogEntrySchema = TimeEntrySchema.extend({
+  userName: z.string(),
+  projectName: z.string(),
+  taskName: z.string(),
+  amendedByName: z.string().nullable(),
+})
+export type LogEntry = z.infer<typeof LogEntrySchema>

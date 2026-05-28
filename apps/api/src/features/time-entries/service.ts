@@ -203,6 +203,81 @@ export async function listForUser(
   return entries.map(serializeEntry)
 }
 
+function serializeLogEntry(
+  entry: Awaited<ReturnType<typeof timeEntriesRepo.findEnrichedForLog>>[number],
+) {
+  return {
+    ...entry,
+    hours: parseFloat(entry.hours),
+    originalHours: entry.originalHours != null ? parseFloat(entry.originalHours) : null,
+    createdAt: entry.createdAt.toISOString(),
+    updatedAt: entry.updatedAt.toISOString(),
+    amendedAt: entry.amendedAt?.toISOString() ?? null,
+  }
+}
+
+function parseIsoWeek(week: string): { from: string; to: string } {
+  const match = /^(\d{4})-W(\d{2})$/.exec(week)
+  if (!match) throw new ValidationError('Week must be in YYYY-Www format (e.g. 2026-W21)')
+
+  const year = parseInt(match[1]!, 10)
+  const weekNum = parseInt(match[2]!, 10)
+  if (weekNum < 1 || weekNum > 53) throw new ValidationError('Week number must be between 1 and 53')
+
+  // Jan 4 is always in ISO week 1. Find the Monday of that week.
+  const jan4 = new Date(year, 0, 4)
+  const jan4DayOfWeek = (jan4.getDay() + 6) % 7 // 0=Monday … 6=Sunday
+  const week1Monday = new Date(year, 0, 4 - jan4DayOfWeek)
+
+  const targetMonday = new Date(week1Monday)
+  targetMonday.setDate(week1Monday.getDate() + (weekNum - 1) * 7)
+
+  const targetSunday = new Date(targetMonday)
+  targetSunday.setDate(targetMonday.getDate() + 6)
+
+  const toDateStr = (d: Date) => d.toISOString().slice(0, 10)
+  return { from: toDateStr(targetMonday), to: toDateStr(targetSunday) }
+}
+
+export async function getDailyEntries(
+  callerId: string,
+  callerRole: string,
+  date: string,
+  userId?: string,
+) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new ValidationError('Date must be in YYYY-MM-DD format')
+  }
+
+  // Managers can filter by a specific user or see all; employees always see only their own
+  const targetUserId =
+    callerRole === 'manager'
+      ? userId // may be undefined → all users
+      : callerId
+
+  const filters = targetUserId ? { date, userId: targetUserId } : { date }
+  const entries = await timeEntriesRepo.findEnrichedForLog(db, filters)
+  return entries.map(serializeLogEntry)
+}
+
+export async function getWeeklyEntries(
+  callerId: string,
+  callerRole: string,
+  week: string,
+  userId?: string,
+) {
+  const { from, to } = parseIsoWeek(week)
+
+  const targetUserId =
+    callerRole === 'manager'
+      ? userId // may be undefined → all users
+      : callerId
+
+  const filters = targetUserId ? { from, to, userId: targetUserId } : { from, to }
+  const entries = await timeEntriesRepo.findEnrichedForLog(db, filters)
+  return entries.map(serializeLogEntry)
+}
+
 // Called by admin-users/service via the acyclic service graph (§1.3)
 export async function rejectAllSubmittedFor(
   tx: Tx,

@@ -239,7 +239,26 @@ Legend: ✅ done · 🔄 in progress · ⬜ not started · ❌ blocked
 
 ---
 
-## Stage 6 — Daily Log & Weekly Summary ⬜
+## Stage 6 — Daily Log & Weekly Summary 🔄
+
+### Deliverables
+
+- ✅ `packages/shared-types` — `LogEntrySchema` / `LogEntry` (extends `TimeEntrySchema` with `userName`, `projectName`, `taskName`, `amendedByName`)
+- ✅ `apps/api/src/db/repositories/time-entries.ts` — `findEnrichedForLog` (joined query, date or date-range + optional userId filter)
+- ✅ `apps/api/src/features/time-entries/service.ts` — `getDailyEntries`, `getWeeklyEntries`, `parseIsoWeek` helper, `serializeLogEntry`
+- ✅ `apps/api/src/features/time-entries/routes.ts` — `GET /time-entries/daily`, `GET /time-entries/weekly` (registered before `/:id`)
+- ⬜ Frontend: `apps/web/src/features/daily-log/` — daily log page
+- ⬜ Frontend: `apps/web/src/features/weekly-summary/` — weekly summary page
+
+### Gate (requires live Supabase project + running BFF)
+
+- ⬜ Daily log shows correct entries with correct total
+- ⬜ Employee sees only own; manager sees all with user filter; manager view of a specific employee matches that employee's own view of the same date
+- ⬜ Weekly summary correctly aggregates for the selected ISO week
+- ⬜ Group-by toggle works; project total and task total reconcile to the same grand total
+- ⬜ Per-day breakdown matches `SUM(hours)` for `(group, date)`
+- ⬜ Week navigator handles year boundaries and ISO week 53 correctly (test with a known week-53 year)
+- ⬜ Mobile (375px): weekly grid scrolls horizontally inside its container, not the page
 
 ---
 

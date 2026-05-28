@@ -125,6 +125,55 @@ export const countForDateExcluding = (
     )
     .then((r) => r[0]?.count ?? 0)
 
+// Enriched log view: time entry joined with user/project/task names for daily log and weekly summary
+export const findEnrichedForLog = (
+  d: DB,
+  filters: {
+    date?: string // YYYY-MM-DD — daily log
+    from?: string // YYYY-MM-DD — weekly lower bound (inclusive)
+    to?: string // YYYY-MM-DD — weekly upper bound (inclusive)
+    userId?: string // undefined = all users (manager all-team view)
+  },
+) => {
+  const amendedByUser = alias(users, 'amended_by_user')
+
+  return d
+    .select({
+      id: timeEntries.id,
+      userId: timeEntries.userId,
+      projectId: timeEntries.projectId,
+      taskId: timeEntries.taskId,
+      entryDate: timeEntries.entryDate,
+      hours: timeEntries.hours,
+      notes: timeEntries.notes,
+      status: timeEntries.status,
+      managerNote: timeEntries.managerNote,
+      amendedAt: timeEntries.amendedAt,
+      amendedBy: timeEntries.amendedBy,
+      originalHours: timeEntries.originalHours,
+      createdAt: timeEntries.createdAt,
+      updatedAt: timeEntries.updatedAt,
+      userName: users.fullName,
+      projectName: projects.name,
+      taskName: tasks.name,
+      amendedByName: amendedByUser.fullName,
+    })
+    .from(timeEntries)
+    .innerJoin(users, eq(timeEntries.userId, users.id))
+    .innerJoin(projects, eq(timeEntries.projectId, projects.id))
+    .innerJoin(tasks, eq(timeEntries.taskId, tasks.id))
+    .leftJoin(amendedByUser, eq(timeEntries.amendedBy, amendedByUser.id))
+    .where(
+      and(
+        filters.date ? eq(timeEntries.entryDate, filters.date) : undefined,
+        filters.from ? gte(timeEntries.entryDate, filters.from) : undefined,
+        filters.to ? lte(timeEntries.entryDate, filters.to) : undefined,
+        filters.userId ? eq(timeEntries.userId, filters.userId) : undefined,
+      ),
+    )
+    .orderBy(timeEntries.entryDate, timeEntries.createdAt)
+}
+
 // Enriched queue view: time entry joined with user/project/task names for the approval queue
 export const findForQueue = (
   d: DB,
