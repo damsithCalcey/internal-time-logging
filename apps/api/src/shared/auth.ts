@@ -68,9 +68,3 @@ export const requireRole = (role: UserRole) =>
     }
     await next()
   })
-
-// Alias for clarity in route definitions — any authenticated, active user passes
-export const requireAuth = createMiddleware<AppEnv>(async (_c, next) => {
-  // authMiddleware already ran; just continue
-  await next()
-})
