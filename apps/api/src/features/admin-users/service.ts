@@ -2,21 +2,13 @@ import { db } from '@/db/client.js'
 import { usersRepo } from '@/db/repositories/index.js'
 import { serializeUser } from '@/db/serializers.js'
 import { withTx } from '@/db/tx.js'
-import { User, type FieldPatch } from '@/domain/user.js'
+import { User } from '@/domain/user.js'
 import * as timeEntriesService from '@/features/time-entries/service.js'
 import * as timerService from '@/features/timer/service.js'
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors.js'
 import { logger } from '@/shared/logger.js'
 import { supabaseAdmin } from '@/shared/supabase-admin.js'
 import type { CreateUserBody, UpdateUserBody } from '@repo/shared-types'
-
-function fieldPatchOf(data: UpdateUserBody): FieldPatch {
-  const patch: FieldPatch = {}
-  if (data.fullName !== undefined) patch.fullName = data.fullName
-  if (data.role !== undefined) patch.role = data.role
-  if (data.managerId !== undefined) patch.managerId = data.managerId
-  return patch
-}
 
 export async function listUsers() {
   const all = await usersRepo.findAll(db)
@@ -71,7 +63,7 @@ export async function updateUser(_callerId: string, id: string, data: UpdateUser
   const user = User.from(row)
 
   // Within-row invariants (self-as-manager etc.) fail fast before any extra DB hits.
-  const plan = user.updateProfile(fieldPatchOf(data))
+  const plan = user.updateProfile(data)
   if (!plan.ok) throw new ValidationError(plan.reason)
 
   // B2: block manager demotion if other users report to them (cross-row).

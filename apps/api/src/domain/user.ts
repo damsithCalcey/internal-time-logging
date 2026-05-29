@@ -18,16 +18,14 @@ import type { NewUser, User as UserRow } from '../db/schema.js'
 type Role = UserRow['role']
 
 export type FieldPatch = {
-  fullName?: string
-  role?: Role
-  managerId?: string | null
+  fullName?: string | undefined
+  role?: Role | undefined
+  managerId?: string | null | undefined
 }
 
 type Patch = Partial<Omit<NewUser, 'id' | 'createdAt'>>
 
-export type Plan =
-  | { ok: false; reason: string }
-  | { ok: true; patch: Patch }
+export type Plan = { ok: false; reason: string } | { ok: true; patch: Patch }
 
 const ok = (patch: Patch): Plan => ({ ok: true, patch })
 const fail = (reason: string): Plan => ({ ok: false, reason })
