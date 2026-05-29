@@ -9,6 +9,7 @@ import {
   type NewTimeEntry,
   type TimeEntry,
 } from '../schema.js'
+export type { TimeEntry } from '../schema.js'
 import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { db } from '../client.js'
 import { users, type NewUser, type User } from '../schema.js'
+export type { User } from '../schema.js'
 import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db

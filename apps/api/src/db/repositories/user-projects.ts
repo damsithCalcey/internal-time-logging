@@ -7,6 +7,7 @@ import {
   type User,
   type UserProject,
 } from '../schema.js'
+export type { UserProject } from '../schema.js'
 import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db

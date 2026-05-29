@@ -1,7 +1,8 @@
-import type { ProjectListRow as RepoProjectListRow } from '@/db/repositories/projects.js'
-import type { EnrichedTimeEntryRow } from '@/db/repositories/time-entries.js'
-import type { ProjectMemberRow } from '@/db/repositories/user-projects.js'
-import type { Project, Task, TimeEntry, User, UserProject } from '@/db/schema.js'
+import type { Project, ProjectListRow as RepoProjectListRow } from '@/db/repositories/projects.js'
+import type { Task } from '@/db/repositories/tasks.js'
+import type { EnrichedTimeEntryRow, TimeEntry } from '@/db/repositories/time-entries.js'
+import type { User } from '@/db/repositories/users.js'
+import type { ProjectMemberRow, UserProject } from '@/db/repositories/user-projects.js'
 
 export function serializeTimeEntry(entry: TimeEntry) {
   return {

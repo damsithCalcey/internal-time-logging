@@ -1,6 +1,7 @@
 import { countDistinct, eq, sql } from 'drizzle-orm'
 import type { db } from '../client.js'
 import { projects, tasks, userProjects, type NewProject, type Project } from '../schema.js'
+export type { Project } from '../schema.js'
 import type { Tx } from '../tx.js'
 
 type DB = Tx | typeof db
