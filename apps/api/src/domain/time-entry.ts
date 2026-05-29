@@ -1,19 +1,28 @@
-// Domain entity wrapping a TimeEntry row with the operations that move it
-// through the state machine. Pure: no I/O, no DB. The service composes the
-// returned `Plan` with `timeEntriesRepo.applyPlan` for race-safe persistence.
-//
-// Why an entity instead of free functions in the service:
-//   - Status transitions and their side-effects (amend metadata, rejected→draft
-//     flip on employee edit, `originalHours` populate-once) live in one place.
-//   - The service stops deciding when to call `transitionStatus` vs `update`;
-//     the entity returns a single uniform `Plan` shape.
-//   - Cross-slice consumers (approvals/service.ts) get the same semantics as
-//     time-entries/service.ts without duplicating the state-machine call.
-//
-// See also: shared/state-machine.ts (the pure transition kernel this wraps).
-
 import type { NewTimeEntry, TimeEntry as TimeEntryRow } from '../db/schema.js'
-import { canTransition } from '../shared/state-machine.js'
+
+// Valid status transitions: 'fromStatus:toStatus' → required role
+const ALLOWED: Record<string, 'any' | 'manager'> = {
+  'draft:submitted': 'any',
+  'submitted:draft': 'any',      // withdraw
+  'submitted:approved': 'manager',
+  'submitted:rejected': 'manager',
+  'approved:amended': 'manager', // triggered by manager PATCH
+  'rejected:draft': 'any',       // employee re-saves a rejected entry
+}
+
+type TransitionResult = { ok: true } | { ok: false; reason: string }
+
+function canTransition(current: string, next: string, role: string): TransitionResult {
+  const key = `${current}:${next}`
+  const required = ALLOWED[key]
+  if (required === undefined) {
+    return { ok: false, reason: `Transition '${current}' → '${next}' is not permitted` }
+  }
+  if (required === 'manager' && role !== 'manager') {
+    return { ok: false, reason: `Only managers can transition '${current}' → '${next}'` }
+  }
+  return { ok: true }
+}
 
 type Status = TimeEntryRow['status']
 
