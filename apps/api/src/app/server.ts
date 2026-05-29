@@ -6,7 +6,16 @@ import taskRoutes from '@/routes/tasks.js'
 import timeEntriesRoutes from '@/routes/time-entries.js'
 import userRoutes from '@/routes/users.js'
 import { authMiddleware, type AppEnv } from '@/shared/auth.js'
-import { HttpError } from '@/shared/errors.js'
+import {
+  AppError,
+  ConflictError,
+  ForbiddenError,
+  HttpError,
+  MethodNotAllowedError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from '@/shared/errors.js'
 import { logger } from '@/shared/logger.js'
 import type { HealthResponse } from '@repo/shared-types'
 import { Hono } from 'hono'
@@ -39,6 +48,16 @@ api.route('/', approvalsRoutes)
 
 app.route('/', api)
 
+function appErrorStatus(err: AppError): 400 | 401 | 403 | 404 | 405 | 409 | 500 {
+  if (err instanceof NotFoundError) return 404
+  if (err instanceof ConflictError) return 409
+  if (err instanceof ForbiddenError) return 403
+  if (err instanceof UnauthorizedError) return 401
+  if (err instanceof ValidationError) return 400
+  if (err instanceof MethodNotAllowedError) return 405
+  return 500
+}
+
 // Global error handler
 app.onError((err, c) => {
   if (err instanceof HttpError) {
@@ -46,6 +65,9 @@ app.onError((err, c) => {
       { error: err.message, code: err.code },
       err.status as 400 | 401 | 403 | 404 | 405 | 409,
     )
+  }
+  if (err instanceof AppError) {
+    return c.json({ error: err.message, code: err.code }, appErrorStatus(err))
   }
   logger.error({ err }, 'Unhandled error')
   return c.json({ error: 'Internal server error' }, 500)
