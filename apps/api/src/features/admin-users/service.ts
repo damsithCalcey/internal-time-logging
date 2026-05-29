@@ -2,12 +2,21 @@ import { db } from '@/db/client.js'
 import { usersRepo } from '@/db/repositories/index.js'
 import { serializeUser } from '@/db/serializers.js'
 import { withTx } from '@/db/tx.js'
+import { User, type FieldPatch } from '@/domain/user.js'
 import * as timeEntriesService from '@/features/time-entries/service.js'
 import * as timerService from '@/features/timer/service.js'
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors.js'
 import { logger } from '@/shared/logger.js'
 import { supabaseAdmin } from '@/shared/supabase-admin.js'
 import type { CreateUserBody, UpdateUserBody } from '@repo/shared-types'
+
+function fieldPatchOf(data: UpdateUserBody): FieldPatch {
+  const patch: FieldPatch = {}
+  if (data.fullName !== undefined) patch.fullName = data.fullName
+  if (data.role !== undefined) patch.role = data.role
+  if (data.managerId !== undefined) patch.managerId = data.managerId
+  return patch
+}
 
 export async function listUsers() {
   const all = await usersRepo.findAll(db)
@@ -57,10 +66,15 @@ export async function createUser(_callerId: string, data: CreateUserBody) {
 }
 
 export async function updateUser(_callerId: string, id: string, data: UpdateUserBody) {
-  const user = await usersRepo.findById(db, id)
-  if (!user) throw new NotFoundError('User not found')
+  const row = await usersRepo.findById(db, id)
+  if (!row) throw new NotFoundError('User not found')
+  const user = User.from(row)
 
-  // B2: block manager demotion if other users report to them
+  // Within-row invariants (self-as-manager etc.) fail fast before any extra DB hits.
+  const plan = user.updateProfile(fieldPatchOf(data))
+  if (!plan.ok) throw new ValidationError(plan.reason)
+
+  // B2: block manager demotion if other users report to them (cross-row).
   if (data.role === 'employee' && user.role === 'manager') {
     const allUsers = await usersRepo.findAll(db)
     const hasReports = allUsers.some((u) => u.managerId === id && u.id !== id)
@@ -72,32 +86,30 @@ export async function updateUser(_callerId: string, id: string, data: UpdateUser
     }
   }
 
-  // B2: validate managerId points to an actual manager
+  // B2: validate managerId points to an actual manager (cross-row).
   if (data.managerId != null) {
-    if (data.managerId === id) throw new ValidationError('A user cannot be their own manager')
     const manager = await usersRepo.findById(db, data.managerId)
     if (!manager || manager.role !== 'manager') {
       throw new ValidationError('managerId must reference an existing manager')
     }
   }
 
-  const updated = await usersRepo.update(db, id, {
-    ...(data.fullName !== undefined && { fullName: data.fullName }),
-    ...(data.role !== undefined && { role: data.role }),
-    ...(data.managerId !== undefined && { managerId: data.managerId }),
-  })
+  const updated = await usersRepo.update(db, id, plan.patch)
   if (!updated) throw new NotFoundError('User not found')
   return serializeUser(updated)
 }
 
 export async function deactivate(userId: string) {
-  const user = await usersRepo.findById(db, userId)
-  if (!user) throw new NotFoundError('User not found')
-  if (!user.isActive) throw new ConflictError('User is already inactive', 'already-inactive')
+  const row = await usersRepo.findById(db, userId)
+  if (!row) throw new NotFoundError('User not found')
+  const user = User.from(row)
+
+  const plan = user.deactivate()
+  if (!plan.ok) throw new ConflictError(plan.reason, 'already-inactive')
 
   const systemNote = 'Automatically rejected: user account deactivated.'
   await withTx(async (tx) => {
-    await usersRepo.setActive(tx, userId, false)
+    await usersRepo.update(tx, userId, plan.patch)
     // Cross-slice calls via acyclic service graph (§1.3) — each owns its own side-effects
     await timeEntriesService.rejectAllSubmittedFor(tx, userId, systemNote)
     await timerService.discardActiveSessionFor(tx, userId)
@@ -113,8 +125,12 @@ export async function deactivate(userId: string) {
 }
 
 export async function reactivate(userId: string) {
-  const user = await usersRepo.findById(db, userId)
-  if (!user) throw new NotFoundError('User not found')
-  if (user.isActive) throw new ConflictError('User is already active', 'already-active')
-  await usersRepo.setActive(db, userId, true)
+  const row = await usersRepo.findById(db, userId)
+  if (!row) throw new NotFoundError('User not found')
+  const user = User.from(row)
+
+  const plan = user.reactivate()
+  if (!plan.ok) throw new ConflictError(plan.reason, 'already-active')
+
+  await usersRepo.update(db, userId, plan.patch)
 }

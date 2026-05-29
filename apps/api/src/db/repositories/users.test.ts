@@ -61,17 +61,17 @@ describe('users repository', () => {
     expect(user!.id).toBe(TEST_USER_ID)
   })
 
-  itDb('setActive flips isActive', async () => {
-    const updated = await usersRepo.setActive(db, TEST_USER_ID, false)
+  itDb('update flips isActive', async () => {
+    const updated = await usersRepo.update(db, TEST_USER_ID, { isActive: false })
     expect(updated?.isActive).toBe(false)
-    const updated2 = await usersRepo.setActive(db, TEST_USER_ID, true)
+    const updated2 = await usersRepo.update(db, TEST_USER_ID, { isActive: true })
     expect(updated2?.isActive).toBe(true)
   })
 
   itDb('findAllActive excludes inactive users', async () => {
-    await usersRepo.setActive(db, TEST_USER_ID, false)
+    await usersRepo.update(db, TEST_USER_ID, { isActive: false })
     const active = await usersRepo.findAllActive(db)
     expect(active.find((u) => u.id === TEST_USER_ID)).toBeUndefined()
-    await usersRepo.setActive(db, TEST_USER_ID, true)
+    await usersRepo.update(db, TEST_USER_ID, { isActive: true })
   })
 })

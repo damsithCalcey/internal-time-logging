@@ -346,3 +346,13 @@ Stage 1 gate explicitly verifies these grants via `information_schema.role_table
 **Tested in** `apps/api/src/domain/time-entry.test.ts` (21 pure tests) covering: rejected→draft flip on employee edit; `originalHours` populate-once semantics across `approved → amended` and subsequent `amended → amended` re-edits; role guards on approve/reject; trim/empty validation on rejection note.
 
 ---
+
+### DH-03 · `User` domain entity folds active/inactive and self-as-manager invariants
+
+**Decision:** Introduced `apps/api/src/domain/user.ts` exporting a `User` class with `deactivate()`, `reactivate()`, and `updateProfile(patch)` methods. Each is pure (no I/O) and returns a `Plan` of the form `{ ok: false, reason } | { ok: true, patch }`. The `admin-users/service.ts` now reads the row, wraps it with `User.from(row)`, asks the entity for a plan, and persists via `usersRepo.update`. The `usersRepo.setActive` shorthand was removed in favour of the entity-driven flow (the repo test was updated to call `update({ isActive })`).
+
+**Why:** Three failure modes that all live on a single row — "already active", "already inactive", and "a user cannot be their own manager" — were duplicated across `deactivate`, `reactivate`, and `updateUser`, with each call site reaching for a different repo method (`setActive` vs `update`) depending on which field changed. The entity centralises the within-row invariants and gives the service a single uniform persistence path. Cross-row checks (`managerId` references an actual manager; demoting a manager that still has reports) stay in the service — they require lookups the entity intentionally has no access to. The `Plan` shape deliberately omits the optimistic-concurrency token that `TimeEntry`'s `Plan` carries: `User` has no status column to gate on, and inventing one would have been pattern-matching, not value. The shape can be widened later if a concrete race condition warrants it.
+
+**Tested in** `apps/api/src/domain/user.test.ts` (10 pure tests) covering: active/inactive guards on de/reactivate; field projection in `updateProfile`; self-as-manager rejection; clearing `managerId` via `null`; empty-patch case.
+
+---

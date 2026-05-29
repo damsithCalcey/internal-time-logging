@@ -15,7 +15,6 @@ export interface UsersRepo {
   findAllActive(d: DB): Promise<User[]>
   insert(d: DB, data: NewUser): Promise<User>
   update(d: DB, id: string, data: Partial<Omit<NewUser, 'id' | 'createdAt'>>): Promise<User | null>
-  setActive(d: DB, id: string, isActive: boolean): Promise<User | null>
 }
 
 export const findById: UsersRepo['findById'] = (d, id) =>
@@ -52,14 +51,6 @@ export const update: UsersRepo['update'] = (d, id, data) =>
     .returning()
     .then((r) => r[0] ?? null)
 
-export const setActive: UsersRepo['setActive'] = (d, id, isActive) =>
-  d
-    .update(users)
-    .set({ isActive })
-    .where(eq(users.id, id))
-    .returning()
-    .then((r) => r[0] ?? null)
-
 export const usersRepo = {
   findById,
   findByEmail,
@@ -67,5 +58,4 @@ export const usersRepo = {
   findAllActive,
   insert,
   update,
-  setActive,
 } satisfies UsersRepo
