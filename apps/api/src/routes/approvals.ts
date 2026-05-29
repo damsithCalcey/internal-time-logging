@@ -24,7 +24,7 @@ const queueQuerySchema = z.object({
     .optional(),
 })
 
-approvalsRoutes.get('/approvals', zValidator('query', queueQuerySchema), async (c) => {
+approvalsRoutes.get('/', zValidator('query', queueQuerySchema), async (c) => {
   const q = c.req.valid('query')
   const filters: Parameters<typeof queries.getQueue>[0] = {}
   if (q.status !== undefined) filters.status = q.status
@@ -35,7 +35,7 @@ approvalsRoutes.get('/approvals', zValidator('query', queueQuerySchema), async (
   return c.json(items.map(serializeEnrichedEntry))
 })
 
-approvalsRoutes.post('/approvals/:id/approve', async (c) => {
+approvalsRoutes.post('/:id/approve', async (c) => {
   const { id } = c.req.param()
   const manager = c.get('user')
   const entry = await commands.approveEntry(manager.id, id)
@@ -43,7 +43,7 @@ approvalsRoutes.post('/approvals/:id/approve', async (c) => {
 })
 
 approvalsRoutes.post(
-  '/approvals/:id/reject',
+  '/:id/reject',
   zValidator('json', RejectBodySchema, (result, c) => {
     if (!result.success) {
       const first = result.error.errors[0]

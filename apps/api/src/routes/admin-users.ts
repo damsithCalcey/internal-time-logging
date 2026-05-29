@@ -9,13 +9,13 @@ import { serializeUser } from './presenters.js'
 
 const adminUsersRoutes = new Hono<AppEnv>()
 
-adminUsersRoutes.get('/admin/users', requireRole('manager'), async (c) => {
+adminUsersRoutes.get('/', requireRole('manager'), async (c) => {
   const users = await queries.listUsers()
   return c.json(users.map(serializeUser))
 })
 
 adminUsersRoutes.post(
-  '/admin/users',
+  '/',
   requireRole('manager'),
   zValidator('json', CreateUserBodySchema),
   async (c) => {
@@ -27,12 +27,12 @@ adminUsersRoutes.post(
 )
 
 // Hard delete is blocked per BRD §5.3
-adminUsersRoutes.delete('/admin/users/:id', requireRole('manager'), (_) => {
+adminUsersRoutes.delete('/:id', requireRole('manager'), (_) => {
   throw new MethodNotAllowedError('Hard delete of users is not permitted. Use deactivate instead.')
 })
 
 adminUsersRoutes.patch(
-  '/admin/users/:id',
+  '/:id',
   requireRole('manager'),
   zValidator('json', UpdateUserBodySchema),
   async (c) => {
@@ -44,13 +44,13 @@ adminUsersRoutes.patch(
   },
 )
 
-adminUsersRoutes.post('/admin/users/:id/deactivate', requireRole('manager'), async (c) => {
+adminUsersRoutes.post('/:id/deactivate', requireRole('manager'), async (c) => {
   const id = c.req.param('id')
   await commands.deactivate(id)
   return c.body(null, 204)
 })
 
-adminUsersRoutes.post('/admin/users/:id/reactivate', requireRole('manager'), async (c) => {
+adminUsersRoutes.post('/:id/reactivate', requireRole('manager'), async (c) => {
   const id = c.req.param('id')
   await commands.reactivate(id)
   return c.body(null, 204)

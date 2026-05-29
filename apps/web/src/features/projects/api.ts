@@ -59,8 +59,8 @@ export const tasksApi = {
     return http.post(`/projects/${projectId}/tasks`, body)
   },
 
-  update(taskId: string, body: UpdateTaskBody): Promise<Task> {
-    return http.patch(`/tasks/${taskId}`, body)
+  update(projectId: string, taskId: string, body: UpdateTaskBody): Promise<Task> {
+    return http.patch(`/projects/${projectId}/tasks/${taskId}`, body)
   },
 }
 

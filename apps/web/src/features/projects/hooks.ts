@@ -85,7 +85,7 @@ export function useUpdateTask(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ taskId, body }: { taskId: string; body: UpdateTaskBody }) =>
-      tasksApi.update(taskId, body),
+      tasksApi.update(projectId, taskId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: projectKeys.detail(projectId) })
       qc.invalidateQueries({ queryKey: projectKeys.lists() })

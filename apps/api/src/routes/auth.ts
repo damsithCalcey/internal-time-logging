@@ -5,7 +5,7 @@ import { Hono } from 'hono'
 const authRoutes = new Hono<AppEnv>()
 
 // No DB lookup — claims come directly from the verified JWT (dev plan §1.4)
-authRoutes.get('/me', (c) => {
+authRoutes.get('/', (c) => {
   const user = c.get('user')
   return c.json<MeResponse>({
     id: user.id,

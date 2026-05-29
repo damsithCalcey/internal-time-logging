@@ -9,7 +9,7 @@ import { serializeEnrichedEntry, serializeTimeEntry } from './presenters.js'
 const timeEntriesRoutes = new Hono<AppEnv>()
 
 // GET /time-entries?user=<id>&date=<YYYY-MM-DD>
-timeEntriesRoutes.get('/time-entries', async (c) => {
+timeEntriesRoutes.get('/', async (c) => {
   const user = c.get('user')
   const userId = c.req.query('user')
   const date = c.req.query('date')
@@ -19,7 +19,7 @@ timeEntriesRoutes.get('/time-entries', async (c) => {
 
 // GET /time-entries/daily?date=YYYY-MM-DD&userId=<id?>
 // Registered before /:id so the literal segment matches first
-timeEntriesRoutes.get('/time-entries/daily', async (c) => {
+timeEntriesRoutes.get('/daily', async (c) => {
   const user = c.get('user')
   const date = c.req.query('date')
   const userId = c.req.query('userId')
@@ -29,7 +29,7 @@ timeEntriesRoutes.get('/time-entries/daily', async (c) => {
 })
 
 // GET /time-entries/weekly?week=YYYY-Www&userId=<id?>
-timeEntriesRoutes.get('/time-entries/weekly', async (c) => {
+timeEntriesRoutes.get('/weekly', async (c) => {
   const user = c.get('user')
   const week = c.req.query('week')
   const userId = c.req.query('userId')
@@ -39,7 +39,7 @@ timeEntriesRoutes.get('/time-entries/weekly', async (c) => {
 })
 
 // GET /time-entries/:id
-timeEntriesRoutes.get('/time-entries/:id', async (c) => {
+timeEntriesRoutes.get('/:id', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
   const entry = await queries.getEntry(user.id, user.role, id)
@@ -47,32 +47,24 @@ timeEntriesRoutes.get('/time-entries/:id', async (c) => {
 })
 
 // POST /time-entries
-timeEntriesRoutes.post(
-  '/time-entries',
-  zValidator('json', CreateTimeEntryBodySchema),
-  async (c) => {
-    const user = c.get('user')
-    const body = c.req.valid('json')
-    const entry = await commands.createTimeEntry(user.id, user.role, body)
-    return c.json(serializeTimeEntry(entry), 201)
-  },
-)
+timeEntriesRoutes.post('/', zValidator('json', CreateTimeEntryBodySchema), async (c) => {
+  const user = c.get('user')
+  const body = c.req.valid('json')
+  const entry = await commands.createTimeEntry(user.id, user.role, body)
+  return c.json(serializeTimeEntry(entry), 201)
+})
 
 // PATCH /time-entries/:id
-timeEntriesRoutes.patch(
-  '/time-entries/:id',
-  zValidator('json', UpdateTimeEntryBodySchema),
-  async (c) => {
-    const user = c.get('user')
-    const id = c.req.param('id')
-    const body = c.req.valid('json')
-    const entry = await commands.updateTimeEntry(user.id, user.role, id, body)
-    return c.json(serializeTimeEntry(entry))
-  },
-)
+timeEntriesRoutes.patch('/:id', zValidator('json', UpdateTimeEntryBodySchema), async (c) => {
+  const user = c.get('user')
+  const id = c.req.param('id')
+  const body = c.req.valid('json')
+  const entry = await commands.updateTimeEntry(user.id, user.role, id, body)
+  return c.json(serializeTimeEntry(entry))
+})
 
 // POST /time-entries/:id/submit
-timeEntriesRoutes.post('/time-entries/:id/submit', async (c) => {
+timeEntriesRoutes.post('/:id/submit', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
   const entry = await commands.submitEntry(user.id, user.role, id)
@@ -80,7 +72,7 @@ timeEntriesRoutes.post('/time-entries/:id/submit', async (c) => {
 })
 
 // POST /time-entries/:id/withdraw
-timeEntriesRoutes.post('/time-entries/:id/withdraw', async (c) => {
+timeEntriesRoutes.post('/:id/withdraw', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
   const entry = await commands.withdrawEntry(user.id, user.role, id)

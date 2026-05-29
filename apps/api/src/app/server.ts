@@ -2,7 +2,6 @@ import adminUsersRoutes from '@/routes/admin-users.js'
 import approvalsRoutes from '@/routes/approvals.js'
 import authRoutes from '@/routes/auth.js'
 import projectRoutes from '@/routes/projects.js'
-import taskRoutes from '@/routes/tasks.js'
 import timeEntriesRoutes from '@/routes/time-entries.js'
 import userRoutes from '@/routes/users.js'
 import { authMiddleware, type AppEnv } from '@/shared/auth.js'
@@ -38,13 +37,12 @@ app.get('/health', (c) => c.json<HealthResponse>({ ok: true }))
 // All routes below require a valid JWT
 const api = new Hono<AppEnv>()
 api.use('*', authMiddleware)
-api.route('/', authRoutes)
-api.route('/', projectRoutes)
-api.route('/', taskRoutes)
-api.route('/', userRoutes)
-api.route('/', timeEntriesRoutes)
-api.route('/', adminUsersRoutes)
-api.route('/', approvalsRoutes)
+api.route('/me', authRoutes)
+api.route('/projects', projectRoutes)
+api.route('/users', userRoutes)
+api.route('/time-entries', timeEntriesRoutes)
+api.route('/admin/users', adminUsersRoutes)
+api.route('/approvals', approvalsRoutes)
 
 app.route('/', api)
 

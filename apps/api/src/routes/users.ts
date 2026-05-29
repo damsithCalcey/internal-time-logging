@@ -6,7 +6,7 @@ import { Hono } from 'hono'
 const userRoutes = new Hono<AppEnv>()
 
 // Returns active users for pickers (assignment panel, etc.) — read-only slice
-userRoutes.get('/users', async (c) => {
+userRoutes.get('/', async (c) => {
   const active = await queries.listActiveUsers()
   const response: UserOption[] = active.map((u) => ({
     id: u.id,
