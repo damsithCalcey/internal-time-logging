@@ -1,8 +1,10 @@
+import { type AppEnv } from '@/shared/auth.js'
+import * as commands from '@/useCases/time-entries/commands.js'
+import * as queries from '@/useCases/time-entries/queries.js'
 import { zValidator } from '@hono/zod-validator'
-import type { AppEnv } from '@/shared/auth.js'
 import { CreateTimeEntryBodySchema, UpdateTimeEntryBodySchema } from '@repo/shared-types'
 import { Hono } from 'hono'
-import * as service from './service.js'
+import { serializeEnrichedEntry, serializeTimeEntry } from './presenters.js'
 
 const timeEntriesRoutes = new Hono<AppEnv>()
 
@@ -11,8 +13,8 @@ timeEntriesRoutes.get('/time-entries', async (c) => {
   const user = c.get('user')
   const userId = c.req.query('user')
   const date = c.req.query('date')
-  const entries = await service.listForUser(user.id, user.role, userId, date)
-  return c.json(entries)
+  const entries = await queries.listForUser(user.id, user.role, userId, date)
+  return c.json(entries.map(serializeTimeEntry))
 })
 
 // GET /time-entries/daily?date=YYYY-MM-DD&userId=<id?>
@@ -22,8 +24,8 @@ timeEntriesRoutes.get('/time-entries/daily', async (c) => {
   const date = c.req.query('date')
   const userId = c.req.query('userId')
   if (!date) return c.json({ error: 'date query param is required' }, 400)
-  const entries = await service.getDailyEntries(user.id, user.role, date, userId)
-  return c.json(entries)
+  const entries = await queries.getDailyEntries(user.id, user.role, date, userId)
+  return c.json(entries.map(serializeEnrichedEntry))
 })
 
 // GET /time-entries/weekly?week=YYYY-Www&userId=<id?>
@@ -32,16 +34,16 @@ timeEntriesRoutes.get('/time-entries/weekly', async (c) => {
   const week = c.req.query('week')
   const userId = c.req.query('userId')
   if (!week) return c.json({ error: 'week query param is required' }, 400)
-  const entries = await service.getWeeklyEntries(user.id, user.role, week, userId)
-  return c.json(entries)
+  const entries = await queries.getWeeklyEntries(user.id, user.role, week, userId)
+  return c.json(entries.map(serializeEnrichedEntry))
 })
 
 // GET /time-entries/:id
 timeEntriesRoutes.get('/time-entries/:id', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
-  const entry = await service.getEntry(user.id, user.role, id)
-  return c.json(entry)
+  const entry = await queries.getEntry(user.id, user.role, id)
+  return c.json(serializeTimeEntry(entry))
 })
 
 // POST /time-entries
@@ -51,8 +53,8 @@ timeEntriesRoutes.post(
   async (c) => {
     const user = c.get('user')
     const body = c.req.valid('json')
-    const entry = await service.createTimeEntry(user.id, user.role, body)
-    return c.json(entry, 201)
+    const entry = await commands.createTimeEntry(user.id, user.role, body)
+    return c.json(serializeTimeEntry(entry), 201)
   },
 )
 
@@ -64,8 +66,8 @@ timeEntriesRoutes.patch(
     const user = c.get('user')
     const id = c.req.param('id')
     const body = c.req.valid('json')
-    const entry = await service.updateTimeEntry(user.id, user.role, id, body)
-    return c.json(entry)
+    const entry = await commands.updateTimeEntry(user.id, user.role, id, body)
+    return c.json(serializeTimeEntry(entry))
   },
 )
 
@@ -73,16 +75,16 @@ timeEntriesRoutes.patch(
 timeEntriesRoutes.post('/time-entries/:id/submit', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
-  const entry = await service.submitEntry(user.id, user.role, id)
-  return c.json(entry)
+  const entry = await commands.submitEntry(user.id, user.role, id)
+  return c.json(serializeTimeEntry(entry))
 })
 
 // POST /time-entries/:id/withdraw
 timeEntriesRoutes.post('/time-entries/:id/withdraw', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
-  const entry = await service.withdrawEntry(user.id, user.role, id)
-  return c.json(entry)
+  const entry = await commands.withdrawEntry(user.id, user.role, id)
+  return c.json(serializeTimeEntry(entry))
 })
 
 export default timeEntriesRoutes

@@ -1,13 +1,20 @@
-import { Hono } from 'hono'
+import { requireRole, type AppEnv } from '@/shared/auth.js'
+import * as commands from '@/useCases/projects/commands.js'
+import * as queries from '@/useCases/projects/queries.js'
 import { zValidator } from '@hono/zod-validator'
-import type { AppEnv } from '@/shared/auth.js'
-import { requireRole } from '@/shared/auth.js'
 import {
+  AssignUserBodySchema,
   CreateProjectBodySchema,
   UpdateProjectBodySchema,
-  AssignUserBodySchema,
 } from '@repo/shared-types'
-import * as service from './service.js'
+import { Hono } from 'hono'
+import {
+  serializeMember,
+  serializeProject,
+  serializeProjectListRow,
+  serializeTask,
+  serializeUserProject,
+} from './presenters.js'
 
 const projectRoutes = new Hono<AppEnv>()
 
@@ -19,7 +26,7 @@ projectRoutes.get('/projects', async (c) => {
   const userParam = c.req.query('user')
 
   if (forParam === 'time-entry') {
-    const list = await service.listProjectsForTimeEntry(user.id, user.role, userParam)
+    const list = await queries.listProjectsForTimeEntry(user.id, user.role, userParam)
     return c.json(list)
   }
 
@@ -27,24 +34,25 @@ projectRoutes.get('/projects', async (c) => {
     return c.json({ error: 'Forbidden' }, 403)
   }
 
-  const list = await service.listProjects()
-  return c.json(list)
+  const list = await queries.listProjects()
+  return c.json(list.map(serializeProjectListRow))
 })
 
-// GET /projects/stats — manager only, aggregate counts
 projectRoutes.get('/projects/stats', requireRole('manager'), async (c) => {
-  const stats = await service.getStats()
+  const stats = await queries.getStats()
   return c.json(stats)
 })
 
-// GET /projects/:id — any authenticated user (needed for time-entry form detail)
 projectRoutes.get('/projects/:id', async (c) => {
   const id = c.req.param('id')
-  const detail = await service.getProjectDetail(id)
-  return c.json(detail)
+  const { project, tasks, members } = await queries.getProjectDetail(id)
+  return c.json({
+    ...serializeProject(project),
+    tasks: tasks.map(serializeTask),
+    members: members.map(serializeMember),
+  })
 })
 
-// POST /projects — manager only
 projectRoutes.post(
   '/projects',
   requireRole('manager'),
@@ -52,19 +60,11 @@ projectRoutes.post(
   async (c) => {
     const user = c.get('user')
     const body = c.req.valid('json')
-    const project = await service.createProject(user.id, body)
-    return c.json(
-      {
-        ...project,
-        createdAt: project.createdAt.toISOString(),
-        updatedAt: project.updatedAt.toISOString(),
-      },
-      201,
-    )
+    const project = await commands.createProject(user.id, body)
+    return c.json(serializeProject(project), 201)
   },
 )
 
-// PATCH /projects/:id — manager only
 projectRoutes.patch(
   '/projects/:id',
   requireRole('manager'),
@@ -72,12 +72,11 @@ projectRoutes.patch(
   async (c) => {
     const id = c.req.param('id')
     const body = c.req.valid('json')
-    const project = await service.updateProject(id, body)
-    return c.json(project)
+    const project = await commands.updateProject(id, body)
+    return c.json(serializeProject(project))
   },
 )
 
-// POST /projects/:id/assignments — manager only
 projectRoutes.post(
   '/projects/:id/assignments',
   requireRole('manager'),
@@ -86,16 +85,15 @@ projectRoutes.post(
     const projectId = c.req.param('id')
     const user = c.get('user')
     const { userId } = c.req.valid('json')
-    const assignment = await service.assignUser(projectId, userId, user.id)
-    return c.json(assignment, 201)
+    const assignment = await commands.assignUser(projectId, userId, user.id)
+    return c.json(serializeUserProject(assignment), 201)
   },
 )
 
-// DELETE /projects/:id/assignments/:userId — manager only
 projectRoutes.delete('/projects/:id/assignments/:userId', requireRole('manager'), async (c) => {
   const projectId = c.req.param('id')
   const userId = c.req.param('userId')
-  await service.unassignUser(projectId, userId)
+  await commands.unassignUser(projectId, userId)
   return c.body(null, 204)
 })
 

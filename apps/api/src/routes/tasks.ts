@@ -1,20 +1,20 @@
-import type { AppEnv } from '@/shared/auth.js'
-import { requireRole } from '@/shared/auth.js'
+import { requireRole, type AppEnv } from '@/shared/auth.js'
+import * as commands from '@/useCases/tasks/commands.js'
+import * as queries from '@/useCases/tasks/queries.js'
 import { zValidator } from '@hono/zod-validator'
 import { CreateTaskBodySchema, UpdateTaskBodySchema } from '@repo/shared-types'
 import { Hono } from 'hono'
-import * as service from './service.js'
+import { serializeTask } from './presenters.js'
 
 const taskRoutes = new Hono<AppEnv>()
 
 // GET /projects/:id/tasks — any authenticated user (needed for time-entry project+task selection)
 taskRoutes.get('/projects/:id/tasks', async (c) => {
   const projectId = c.req.param('id')
-  const tasks = await service.listTasks(projectId)
-  return c.json(tasks)
+  const tasks = await queries.listTasks(projectId)
+  return c.json(tasks.map(serializeTask))
 })
 
-// POST /projects/:id/tasks — manager only
 taskRoutes.post(
   '/projects/:id/tasks',
   requireRole('manager'),
@@ -22,12 +22,11 @@ taskRoutes.post(
   async (c) => {
     const projectId = c.req.param('id')
     const body = c.req.valid('json')
-    const task = await service.createTask(projectId, body)
-    return c.json(task, 201)
+    const task = await commands.createTask(projectId, body)
+    return c.json(serializeTask(task), 201)
   },
 )
 
-// PATCH /tasks/:id — manager only
 taskRoutes.patch(
   '/tasks/:id',
   requireRole('manager'),
@@ -35,8 +34,8 @@ taskRoutes.patch(
   async (c) => {
     const id = c.req.param('id')
     const body = c.req.valid('json')
-    const task = await service.updateTask(id, body)
-    return c.json(task)
+    const task = await commands.updateTask(id, body)
+    return c.json(serializeTask(task))
   },
 )
 
