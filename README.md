@@ -84,13 +84,14 @@ packages/
 
 Each domain (`auth`, `projects`, `tasks`, `time-entries`, `approvals`, `daily-log`, `weekly-summary`, `timer`, `admin-users`) is a slice on both sides of the wire:
 
-- **api slice** — `routes.ts` (Hono handlers + Zod validation) → `service.ts` (business logic, authz) → repositories under [apps/api/src/db/repositories/](apps/api/src/db/repositories/) (one file per table, every fn takes `Tx | typeof db`).
+- **api slice** — `routes.ts` (Hono handlers + Zod validation) → `service.ts` (cross-row authz, orchestration, transactions) → entities under [apps/api/src/domain/](apps/api/src/domain/) for within-row state-machine and invariants (pure, no I/O) → repositories under [apps/api/src/db/repositories/](apps/api/src/db/repositories/) (one file per table, every fn takes `Tx | typeof db`; each publishes a typed `*Repo` interface that the bound object `satisfies`, so services depend on the contract not the named exports).
 - **web slice** — `routes/`, `components/`, `hooks/` (TanStack Query), `api.ts` (typed client).
 
 Cross-slice rules (enforced by ESLint):
 
 - Routes may not import another slice's routes.
 - Services may call other slices' **services**, but never another slice's **repository**. Cross-slice service calls must follow the acyclic graph in [docs/dev_plan.md](docs/dev_plan.md) §1.3.
+- Services may not import `drizzle-orm`, `drizzle-orm/*`, or `db/schema` directly — all DB access goes through a repository ([DH-01](docs/decisions.md#dh-01--typed-repository-bindings--no-drizzle-in-features-lint-rule)).
 
 ### Design system
 
@@ -107,6 +108,7 @@ This codebase was built end-to-end with Claude Code, one chat per stage, against
 - **Defence-in-depth at the DB.** Composite FK `(project_id, task_id)` ([D0-03](docs/decisions.md#d0-03--b3-composite-fk-for-taskproject-consistency)) and a `timer_sessions.status` discriminator ([D0-10](docs/decisions.md#d0-10--b10-timer_sessions-status-column-accepted)) both prevent classes of bugs that service-only checks would have missed.
 - **Cross-slice rules made executable.** A ≈60-line local ESLint plugin ([D0-13](docs/decisions.md#d0-13--eslint-cross-slice-enforcement-via-local-plugin)) turns the dev plan's import rules into CI failures instead of code-review folklore.
 - **Pure utilities tested without a harness.** The approvals state machine ([D5-01](docs/decisions.md#d5-01--pure-state-machine-in-sharedstate-machinets)) is a pure function with no DB imports — full transition matrix unit-tested without mocks.
+- **Hardening pass after the slices stabilised.** Once Stage 6 landed, a focused pass added typed `*Repo` interfaces + a `no-drizzle-in-features` lint rule ([DH-01](docs/decisions.md#dh-01--typed-repository-bindings--no-drizzle-in-features-lint-rule)) — turning the convention that had drifted in `6c9aee1` into a CI failure — and pulled within-row state-machine and invariants into `domain/` entities ([DH-02](docs/decisions.md#dh-02--timeentry-domain-entity-folds-d5-03-amendment-logic-into-one-place) for `TimeEntry`, [DH-03](docs/decisions.md#dh-03--user-domain-entity-folds-activeinactive-and-self-as-manager-invariants) for `User`). The patterns to extract were obvious by then; doing this earlier would have been speculation.
 
 ### Where it slipped
 
