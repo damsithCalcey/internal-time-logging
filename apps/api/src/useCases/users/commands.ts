@@ -1,19 +1,13 @@
 import { db } from '@/db/client.js'
 import { usersRepo } from '@/db/repositories/index.js'
-import { serializeUser } from '@/db/serializers.js'
 import { withTx } from '@/db/tx.js'
 import { User } from '@/domain/user.js'
-import * as timeEntriesService from '@/features/time-entries/service.js'
-import * as timerService from '@/features/timer/service.js'
 import { ConflictError, NotFoundError, ValidationError } from '@/shared/errors.js'
 import { logger } from '@/shared/logger.js'
 import { supabaseAdmin } from '@/shared/supabase-admin.js'
+import * as timeEntriesCommands from '@/useCases/time-entries/commands.js'
+import * as timerCommands from '@/useCases/timer/commands.js'
 import type { CreateUserBody, UpdateUserBody } from '@repo/shared-types'
-
-export async function listUsers() {
-  const all = await usersRepo.findAll(db)
-  return all.map(serializeUser)
-}
 
 export async function createUser(_callerId: string, data: CreateUserBody) {
   if (data.managerId) {
@@ -39,7 +33,7 @@ export async function createUser(_callerId: string, data: CreateUserBody) {
   const authUserId = authData.user.id
 
   try {
-    const user = await usersRepo.insert(db, {
+    return await usersRepo.insert(db, {
       id: authUserId,
       email: data.email,
       fullName: data.fullName,
@@ -47,7 +41,6 @@ export async function createUser(_callerId: string, data: CreateUserBody) {
       managerId: data.managerId ?? null,
       isActive: true,
     })
-    return serializeUser(user)
   } catch (err) {
     // Compensating action: remove the auth user if the DB insert fails (D0-04)
     await supabaseAdmin.auth.admin.deleteUser(authUserId).catch((e) => {
@@ -62,11 +55,9 @@ export async function updateUser(_callerId: string, id: string, data: UpdateUser
   if (!row) throw new NotFoundError('User not found')
   const user = User.from(row)
 
-  // Within-row invariants (self-as-manager etc.) fail fast before any extra DB hits.
   const plan = user.updateProfile(data)
   if (!plan.ok) throw new ValidationError(plan.reason)
 
-  // B2: block manager demotion if other users report to them (cross-row).
   if (data.role === 'employee' && user.role === 'manager') {
     const allUsers = await usersRepo.findAll(db)
     const hasReports = allUsers.some((u) => u.managerId === id && u.id !== id)
@@ -78,7 +69,6 @@ export async function updateUser(_callerId: string, id: string, data: UpdateUser
     }
   }
 
-  // B2: validate managerId points to an actual manager (cross-row).
   if (data.managerId != null) {
     const manager = await usersRepo.findById(db, data.managerId)
     if (!manager || manager.role !== 'manager') {
@@ -88,7 +78,7 @@ export async function updateUser(_callerId: string, id: string, data: UpdateUser
 
   const updated = await usersRepo.update(db, id, plan.patch)
   if (!updated) throw new NotFoundError('User not found')
-  return serializeUser(updated)
+  return updated
 }
 
 export async function deactivate(userId: string) {
@@ -102,9 +92,8 @@ export async function deactivate(userId: string) {
   const systemNote = 'Automatically rejected: user account deactivated.'
   await withTx(async (tx) => {
     await usersRepo.update(tx, userId, plan.patch)
-    // Cross-slice calls via acyclic service graph (§1.3) — each owns its own side-effects
-    await timeEntriesService.rejectAllSubmittedFor(tx, userId, systemNote)
-    await timerService.discardActiveSessionFor(tx, userId)
+    await timeEntriesCommands.rejectAllSubmittedFor(tx, userId, systemNote)
+    await timerCommands.discardActiveSessionFor(tx, userId)
   })
 
   // Outside the transaction: invalidate refresh tokens. If this fails, DB state is correct;

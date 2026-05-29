@@ -6,25 +6,18 @@ export default [
   {
     plugins: { local: localRules },
   },
-  // Cross-slice route import → hard error (any feature file)
+  // Use cases and routes must not import drizzle-orm or db/schema — repos own DB access
   {
-    files: ['src/features/**/*.ts'],
+    files: ['src/useCases/**/*.ts', 'src/routes/**/*.ts'],
     rules: {
-      'local/no-cross-slice-route-import': 'error',
+      'local/no-drizzle-in-use-cases': 'error',
     },
   },
-  // Cross-slice service import → warning requiring justification comment (any feature file)
+  // Use cases must not depend on the routes layer (would invert the dependency)
   {
-    files: ['src/features/**/*.ts'],
+    files: ['src/useCases/**/*.ts'],
     rules: {
-      'local/no-undocumented-cross-slice-service': 'warn',
-    },
-  },
-  // No inline Drizzle queries inside features — the repo boundary is non-negotiable
-  {
-    files: ['src/features/**/*.ts'],
-    rules: {
-      'local/no-drizzle-in-features': 'error',
+      'local/no-route-import-in-use-cases': 'error',
     },
   },
   {
