@@ -1,18 +1,3 @@
-// Domain entity wrapping a User row with the within-row operations that
-// mutate it. Pure: no I/O, no DB. The service composes the returned `Plan`
-// with `usersRepo.update` for persistence and is responsible for cross-row
-// invariants (e.g. "managerId points to an actual manager",
-// "no other users still report to this manager during demotion").
-//
-// Why an entity instead of free functions in the service:
-//   - The active/inactive guards ("already active" / "already inactive") and
-//     the self-as-manager invariant live in one place instead of being
-//     scattered across `deactivate`/`reactivate`/`updateUser`.
-//   - Field-edit and lifecycle (de/reactivate) calls return the same uniform
-//     `Plan` shape, so the service has a single persistence path.
-//
-// See also: domain/time-entry.ts (sibling entity following the same pattern).
-
 import type { NewUser, User as UserRow } from '../db/schema.js'
 
 type Role = UserRow['role']
